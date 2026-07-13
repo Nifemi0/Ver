@@ -5,7 +5,7 @@
 **Hero contract:** USDT `0x1E4a5963aBFD975d8c9021ce480b42188849D41d`  
 **Mainnet registry:** `0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6`  
 **Site:** https://xlayer-delta.vercel.app  
-**MCP:** `npx -y ver-mcp`  
+**MCP:** `npx -y aic-mcp`  
 **Tagline:** *Deterministic by design. Explainable by AI.*
 
 ---
@@ -20,7 +20,7 @@
     "mcpServers": {
       "ver": {
         "command": "npx",
-        "args": ["-y", "ver-mcp"]
+        "args": ["-y", "aic-mcp"]
       }
     }
   }
@@ -28,8 +28,8 @@
 - [ ] Warm cache: `npm run seed`  (expect 5/5 ✅)
 - [ ] Smoke tools: `npm run demo:smoke` (expect 11/11 ✅)
 - [ ] Browser tabs ready:
-  1. Landing — https://ver-mcp.vercel.app
-  2. Explorer — https://ver-mcp.vercel.app/explorer.html
+  1. Landing — https://xlayer-delta.vercel.app
+  2. Explorer — https://xlayer-delta.vercel.app/explorer.html
   3. Claude / Cursor with Ver MCP connected
 - [ ] Optional backup: local `npm run mcp` if npm registry is flaky
 - [ ] Close Slack/email popups; Do Not Disturb on
@@ -50,7 +50,7 @@
 |---|------|--------|--------|
 | 1 | 0:00–0:15 | Landing | Scroll hero + tagline |
 | 2 | 0:15–0:35 | Explorer / Blockscout ABI | Show the pain (raw ABI wall) |
-| 3 | 0:35–0:50 | MCP config JSON | 2-second flash of `npx -y ver-mcp` |
+| 3 | 0:35–0:50 | MCP config JSON | 2-second flash of `npx -y aic-mcp` |
 | 4 | 0:50–1:40 | Claude/Cursor chat | `get_protocol_graph` + summary |
 | 5 | 1:40–2:10 | Same chat | `explain_transaction` safety beat |
 | 6 | 2:10–2:30 | Same chat | Optional: simulate / search |
@@ -70,7 +70,7 @@
 > Roles, privileged functions, event surface — all tribal knowledge. That’s slow, and it’s wrong more often than we admit.”
 
 ### 0:35 — Setup
-> “Ver is an MCP server. One command: `npx -y ver-mcp`.  
+> “Ver is an MCP server. One command: `npx -y aic-mcp`.  
 > Claude, Cursor, any MCP client — they get a protocol graph instead of a raw ABI.”
 
 ### 0:50 — Compile (hero moment)
@@ -109,7 +109,7 @@ Point at:
 
 ### 2:45 — End card
 > “Ver — protocol intelligence for X Layer.  
-> `npx -y ver-mcp` · npm · GitHub · ver-mcp.vercel.app”
+> `npx -y aic-mcp` · npm · GitHub · aic-mcp.vercel.app”
 
 ---
 
@@ -160,9 +160,9 @@ Fetch the verified source code head for this contract via Ver and tell me the So
 │  Ver                                         │
 │  Deterministic Protocol Intelligence for AI  │
 │                                              │
-│  npx -y ver-mcp                              │
+│  npx -y aic-mcp                              │
 │                                              │
-│  npm      npmjs.com/package/ver-mcp          │
+│  npm      npmjs.com/package/aic-mcp          │
 │  github   github.com/Nifemi0/Ver             │
 │  site     xlayer-delta.vercel.app            │
 │                                              │
@@ -244,6 +244,6 @@ npm run dashboard
 
 ## Version / package
 
-- npm: `ver-mcp@1.0.9-beta.0`
+- npm: `aic-mcp@1.0.9-beta.0`
 - Local path: `/root/xlayer`
 - Registry (X Layer Mainnet): `0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6` · [explorer](https://www.oklink.com/xlayer/address/0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6)

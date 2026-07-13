@@ -11,7 +11,7 @@ import { lookupGraph, registerGraph } from "../chain/registry";
 
 const client = new VerClient();
 const server = new McpServer({
-  name: "ver-mcp",
+  name: "aic-mcp",
   version: "1.0.0"
 });
 

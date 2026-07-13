@@ -49,12 +49,12 @@ function banner() {
 
   console.log("");
   console.log(`${GREEN}${BOLD}  ⬡ Ver MCP ready${RESET}`);
-  console.log(`  ${CYAN}npx -y ver-mcp${RESET}   ${DIM}stdio MCP server${RESET}`);
+  console.log(`  ${CYAN}npx -y aic-mcp${RESET}   ${DIM}stdio MCP server${RESET}`);
   console.log(
-    `  ${DIM}Claude/Cursor:${RESET} command=npx  args=["-y","ver-mcp"]`
+    `  ${DIM}Claude/Cursor:${RESET} command=npx  args=["-y","aic-mcp"]`
   );
   console.log(
-    `  ${DIM}Docs:${RESET} https://ver-mcp.vercel.app/docs.html`
+    `  ${DIM}Docs:${RESET} https://xlayer-delta.vercel.app/docs.html`
   );
   console.log("");
 }
