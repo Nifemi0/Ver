@@ -1,5 +1,5 @@
 {
-  "name": "@apexxxxxxxxxx/ver-mcp",
+  "name": "@apexxxxxxxxxx/aic-mcp",
   "version": "1.0.9-beta.0",
   "description": "Deterministic Protocol Intelligence compiler for AI. Compiles smart contracts into Protocol Graphs via MCP.",
   "main": "dist/sdk/client.js",
@@ -18,7 +18,7 @@
     }
   },
   "bin": {
-    "ver-mcp": "./dist/server/mcp.js"
+    "aic-mcp": "./dist/server/mcp.js"
   },
   "files": [
     "dist",
