@@ -195,7 +195,7 @@
             <p>
                 You can generate a Protocol Graph by passing an X Layer address to our public compilation endpoint:
             </p>
-            <pre><code>curl -s "https://xlayer-delta.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c9021ce480b42188849D41d"</code></pre>
+            <pre><code>curl -s "https://verprotocol.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c9021ce480b42188849D41d"</code></pre>
         </section>
 
         <section id="aic">
@@ -207,7 +207,7 @@
                 Unlike standard AI models which hallucinate parameters, the AIC statically simulates the generated calldata against the live X Layer mainnet using an <code>eth_call</code> dry-run. If a structural mapping failure occurs, it securely forwards the context to an LLM fallback path to resolve complex state changes.
             </p>
             <h3>Usage Endpoint</h3>
-            <pre><code>POST https://xlayer-delta.vercel.app/api/compile-intent
+            <pre><code>POST https://verprotocol.vercel.app/api/compile-intent
 
 {
   "contractAddress": "0x1E4a5963aBFD975d8c9021ce480b42188849D41d",

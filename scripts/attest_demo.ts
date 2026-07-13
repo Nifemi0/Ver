@@ -11,7 +11,7 @@ import { lookupGraph, registerGraph } from "../src/chain/registry";
 
 const USDT = "0x1E4a5963aBFD975d8c9021ce480b42188849D41d";
 const METADATA_URI =
-  "https://xlayer-delta.vercel.app/explorer.html#0x1E4a5963aBFD975d8c9021ce480b42188849D41d";
+  "https://verprotocol.vercel.app/explorer.html#0x1E4a5963aBFD975d8c9021ce480b42188849D41d";
 
 function computeGraphHash(graph: any, address: string): string {
   const hashInput = JSON.stringify({

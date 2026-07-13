@@ -36,13 +36,13 @@ Cursor / Claude / Onchain OS Agents
 ### 1. Compile a Protocol Graph
 
 ```bash
-curl -s "https://xlayer-delta.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c9021ce480b42188849D41d"
+curl -s "https://verprotocol.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c9021ce480b42188849D41d"
 ```
 
 ### 2. Compile an Intent to Calldata
 
 ```bash
-curl -X POST https://xlayer-delta.vercel.app/api/compile-intent \
+curl -X POST https://verprotocol.vercel.app/api/compile-intent \
   -H "Content-Type: application/json" \
   -d '{
     "contractAddress": "0x1E4a5963aBFD975d8c9021ce480b42188849D41d",
@@ -70,7 +70,7 @@ Provide AI tools with native understanding of X Layer smart contracts. Add Ver t
 
 ## Links
 
-- **Website & Documentation**: [https://xlayer-delta.vercel.app](https://xlayer-delta.vercel.app)
+- **Website & Documentation**: [https://verprotocol.vercel.app](https://verprotocol.vercel.app)
 - **Founder / Twitter**: [https://x.com/Love_Light_11](https://x.com/Love_Light_11)
 
 ---

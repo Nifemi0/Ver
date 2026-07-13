@@ -54,7 +54,7 @@ function banner() {
     `  ${DIM}Claude/Cursor:${RESET} command=npx  args=["-y","aic-mcp"]`
   );
   console.log(
-    `  ${DIM}Docs:${RESET} https://xlayer-delta.vercel.app/docs.html`
+    `  ${DIM}Docs:${RESET} https://verprotocol.vercel.app/docs.html`
   );
   console.log("");
 }

@@ -4,7 +4,7 @@
 **Hackathon track:** AI (On-Chain Horizon 2026)  
 **Hero contract:** USDT `0x1E4a5963aBFD975d8c9021ce480b42188849D41d`  
 **Mainnet registry:** `0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6`  
-**Site:** https://xlayer-delta.vercel.app  
+**Site:** https://verprotocol.vercel.app  
 **MCP:** `npx -y aic-mcp`  
 **Tagline:** *Deterministic by design. Explainable by AI.*
 
@@ -28,8 +28,8 @@
 - [ ] Warm cache: `npm run seed`  (expect 5/5 ✅)
 - [ ] Smoke tools: `npm run demo:smoke` (expect 11/11 ✅)
 - [ ] Browser tabs ready:
-  1. Landing — https://xlayer-delta.vercel.app
-  2. Explorer — https://xlayer-delta.vercel.app/explorer.html
+  1. Landing — https://verprotocol.vercel.app
+  2. Explorer — https://verprotocol.vercel.app/explorer.html
   3. Claude / Cursor with Ver MCP connected
 - [ ] Optional backup: local `npm run mcp` if npm registry is flaky
 - [ ] Close Slack/email popups; Do Not Disturb on
