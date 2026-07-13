@@ -1,0 +1,19 @@
+{
+  "network": "X Layer Mainnet",
+  "chainId": 196,
+  "contractName": "XLayerRegistry",
+  "address": "0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6",
+  "transactionHash": "0x27c0351a20720287365114eff963a16f9b9a1b25d0882fed066996c268613709",
+  "blockNumber": 24688343,
+  "timestamp": "2026-07-10T22:50:21.959Z",
+  "explorer": "https://www.oklink.com/xlayer/address/0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6",
+  "verified": true,
+  "demoAttestation": {
+    "protocol": "0xF1B50eD67A9e2CC94Ad3c477779E2d4cBfFf9029",
+    "protocolLabel": "CELA",
+    "graphHash": "0x8a596a656501772fafb3e5c535231a20d56e24d25fb992b0fc5f7301e297e8f6",
+    "txHash": "0x65e5ae501e4d77b858bbb7521934d907d0162347f70a79ce8de94142bb039177",
+    "attester": "0xCbe7F5506A373d8aD8142f76Bb9d7fA6d609008C",
+    "metadataURI": "https://hashgraph-eight.vercel.app/explorer.html#0xF1B50eD67A9e2CC94Ad3c477779E2d4cBfFf9029"
+  }
+}

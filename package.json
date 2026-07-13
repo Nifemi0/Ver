@@ -1,0 +1,89 @@
+{
+  "name": "ver-mcp",
+  "version": "1.0.9-beta.0",
+  "description": "Deterministic Protocol Intelligence compiler for AI. Compiles smart contracts into Protocol Graphs via MCP.",
+  "main": "dist/sdk/client.js",
+  "module": "dist/sdk/client.mjs",
+  "types": "dist/sdk/client.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/sdk/client.d.ts",
+      "require": "./dist/sdk/client.js",
+      "import": "./dist/sdk/client.mjs"
+    },
+    "./mcp": {
+      "types": "./dist/server/mcp.d.ts",
+      "require": "./dist/server/mcp.js",
+      "import": "./dist/server/mcp.mjs"
+    }
+  },
+  "bin": {
+    "ver-mcp": "./dist/server/mcp.js"
+  },
+  "files": [
+    "dist",
+    "scripts/postinstall.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build:mcp": "tsup src/server/mcp.ts src/sdk/client.ts --format cjs,esm --target node20 --out-dir dist --dts --clean --sourcemap",
+    "build": "npm run build:mcp",
+    "prepublishOnly": "npm run build:mcp",
+    "test": "vitest",
+    "dashboard": "npx ts-node src/server/dashboard.ts",
+    "mcp": "npx tsx src/server/mcp.ts",
+    "seed": "npx tsx scripts/seed_cache.ts",
+    "demo:smoke": "npx tsx scripts/demo_smoke.ts",
+    "demo:attest": "npx tsx scripts/attest_demo.ts",
+    "demo:verify-registry": "npx tsx scripts/verify_registry.ts",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "xlayer",
+    "blockchain",
+    "smart-contracts",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "protocol-graph",
+    "deterministic"
+  ],
+  "author": "Ver",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nifemi0/Ver.git"
+  },
+  "homepage": "https://xlayer-delta.vercel.app",
+  "bugs": {
+    "url": "https://github.com/Nifemi0/Ver/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^12.11.1",
+    "bottleneck": "^2.19.5",
+    "commander": "^15.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "semver": "^7.8.5",
+    "viem": "^2.54.6",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.0",
+    "@types/semver": "^7.7.1",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

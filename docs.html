@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation — Ver Protocol</title>
+    <meta name="description" content="Documentation and integration guides for the Ver Protocol Compiler and Agentic Intent Compiler (AIC).">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90' fill='%23C87A53'%3E%E2%AC%A1%3C/text%3E%3C/svg%3E">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Newsreader', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        obsidian: '#0B0C0E',
+                        copper: {
+                            50: '#fdf8f5',
+                            100: '#fbece5',
+                            400: '#d79674',
+                            500: '#C87A53',
+                            600: '#b4653e',
+                            900: '#432111',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #0B0C0E;
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.01em;
+        }
+        
+        h1, h2, h3, h4, .font-serif {
+            font-family: 'Newsreader', serif;
+        }
+
+        pre::-webkit-scrollbar {
+            height: 4px;
+            width: 4px;
+        }
+        pre::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .prose h2 {
+            color: #fff;
+            font-size: 1.875rem;
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.75rem;
+        }
+        .prose h3 {
+            color: #fff;
+            font-size: 1.25rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        .prose p {
+            color: #94A3B8;
+            line-height: 1.7;
+            margin-bottom: 1.25rem;
+        }
+        .prose a {
+            color: #C87A53;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .prose a:hover {
+            color: #d79674;
+            text-decoration: underline;
+            text-decoration-color: rgba(200, 122, 83, 0.3);
+        }
+        .prose code:not(pre code) {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-size: 0.85em;
+            color: #E2E8F0;
+        }
+        .prose pre {
+            background: #000;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .prose pre code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            color: #94A3B8;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col justify-between selection:bg-copper-500 selection:text-white">
+
+<header class="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between border-b border-white/5">
+    <a href="index.html" class="flex items-center gap-2.5 group">
+        <span class="material-symbols-outlined text-copper-500 text-2xl font-light transition-transform group-hover:rotate-45 duration-300">terminal</span>
+        <span class="font-serif font-bold text-xl tracking-tight text-white">Ver</span>
+        <span class="text-[9px] font-mono bg-white/5 text-slate-400 px-2 py-0.5 rounded border border-white/5">X Layer</span>
+    </a>
+    
+    <div class="flex items-center gap-6 text-xs font-mono text-slate-400">
+        <a href="docs.html" class="text-white transition-colors">Docs</a>
+        <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors flex items-center gap-1.5" target="_blank">
+            GitHub
+            <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+        </a>
+        <a href="https://x.com/Love_Light_11" class="hover:text-copper-400 transition-colors flex items-center gap-1.5" target="_blank">
+            𝕏/Twitter
+        </a>
+    </div>
+</header>
+
+<main class="flex-1 w-full max-w-4xl mx-auto px-6 py-12 sm:py-20 flex flex-col lg:flex-row gap-12">
+    <!-- Sidebar Navigation -->
+    <aside class="lg:w-64 flex-shrink-0">
+        <div class="sticky top-12 flex flex-col gap-6">
+            <div>
+                <h4 class="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Core</h4>
+                <ul class="flex flex-col gap-2 text-sm text-slate-400">
+                    <li><a href="#introduction" class="hover:text-copper-400 transition-colors">Introduction</a></li>
+                    <li><a href="#protocol-graph" class="hover:text-copper-400 transition-colors">Protocol Graph</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Integrations</h4>
+                <ul class="flex flex-col gap-2 text-sm text-slate-400">
+                    <li><a href="#aic" class="hover:text-copper-400 transition-colors">Agentic Intent Compiler</a></li>
+                    <li><a href="#mcp-setup" class="hover:text-copper-400 transition-colors">MCP Server Setup</a></li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <article class="prose flex-1">
+        <div class="mb-12 border-b border-white/5 pb-8">
+            <h1 class="text-4xl sm:text-5xl font-serif text-white tracking-tight leading-[1.1] mb-4">
+                Documentation
+            </h1>
+            <p class="text-slate-400 text-lg">
+                Technical references and API integration guides for the Ver Protocol Semantic Compiler and MCP Server.
+            </p>
+        </div>
+
+        <section id="introduction">
+            <h2>Introduction</h2>
+            <p>
+                <strong>Ver</strong> is a deterministic, AI-readable semantic layer built specifically for X Layer. It exposes smart contract ABIs, unflattened bytecode, and verified contract structure to AI agents, stripping away heuristics and replacing them with cryptographically attestable schemas.
+            </p>
+            <p>
+                By anchoring a Protocol Graph directly onto the X Layer mainnet, we guarantee that the contract state an AI agent reads is identical to what is actually deployed, eliminating hallucination in decentralized finance and complex smart contract integrations.
+            </p>
+        </section>
+
+        <section id="protocol-graph">
+            <h2>The Protocol Graph</h2>
+            <p>
+                The primary output of the Ver Protocol Compiler is the <strong>Protocol Graph</strong>. This is a JSON payload representing a comprehensive, deterministic compilation of a smart contract's semantic layout.
+            </p>
+            <p>
+                The schema includes:
+            </p>
+            <ul>
+                <li><code>metadata</code>: Compiler versions, address, and verification state.</li>
+                <li><code>structural</code>: Roles, events, state variables, and dependencies.</li>
+                <li><code>security</code>: Privilege modifiers, ownership functions, and safety guardrails.</li>
+            </ul>
+            <p>
+                You can generate a Protocol Graph by passing an X Layer address to our public compilation endpoint:
+            </p>
+            <pre><code>curl -s "https://xlayer-delta.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c9021ce480b42188849D41d"</code></pre>
+        </section>
+
+        <section id="aic">
+            <h2>Agentic Intent Compiler (AIC)</h2>
+            <p>
+                The <strong>Agentic Intent Compiler</strong> (AIC) is a middleware service that maps natural language intents directly to deterministic EVM calldata.
+            </p>
+            <p>
+                Unlike standard AI models which hallucinate parameters, the AIC statically simulates the generated calldata against the live X Layer mainnet using an <code>eth_call</code> dry-run. If a structural mapping failure occurs, it securely forwards the context to an LLM fallback path to resolve complex state changes.
+            </p>
+            <h3>Usage Endpoint</h3>
+            <pre><code>POST https://xlayer-delta.vercel.app/api/compile-intent
+
+{
+  "contractAddress": "0x1E4a5963aBFD975d8c9021ce480b42188849D41d",
+  "intent": "Transfer 10 USDT to 0x1111111111111111111111111111111111111111"
+}</code></pre>
+            <p>
+                The endpoint returns the EVM calldata alongside the simulation status:
+            </p>
+            <pre><code>{
+  "success": true,
+  "functionName": "transfer",
+  "args": ["0x1111...", "10000000"],
+  "encodedCalldata": "0xa905...",
+  "simulationStatus": "reverted"
+}</code></pre>
+        </section>
+
+        <section id="mcp-setup">
+            <h2>Model Context Protocol (MCP)</h2>
+            <p>
+                Ver includes a native <a href="https://modelcontextprotocol.io/" target="_blank">Model Context Protocol</a> server, allowing you to inject deterministic X Layer protocol graphs directly into AI environments like Claude Desktop, Cursor IDE, or custom agent runtimes.
+            </p>
+            <h3>Installation</h3>
+            <p>Run the MCP server locally without prior installation using <code>npx</code>:</p>
+            <pre><code>npx -y ver-mcp</code></pre>
+            
+            <h3>Claude Desktop Configuration</h3>
+            <p>To integrate Ver with Claude Desktop, add the following to your <code>claude_desktop_config.json</code>:</p>
+            <pre><code>{
+  "mcpServers": {
+    "ver": {
+      "command": "npx",
+      "args": ["-y", "ver-mcp"],
+      "env": {
+        "XLAYER_RPC_URL": "https://rpc.xlayer.tech"
+      }
+    }
+  }
+}</code></pre>
+            <p>
+                Once configured, Claude will have access to the <code>get_protocol_graph</code> and <code>compile_agent_intent</code> tools natively in chat, allowing it to read and interact with X Layer contracts autonomously.
+            </p>
+        </section>
+    </article>
+</main>
+
+<footer class="w-full border-t border-white/5 bg-[#08090B]">
+    <div class="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row justify-between items-center gap-6 text-xs text-slate-500 font-mono">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-copper-500 text-lg">terminal</span>
+            <span class="font-serif font-bold text-sm text-white">Ver Protocol</span>
+        </div>
+        <div>
+            © 2026 Ver Protocol. Deployed on X Layer.
+        </div>
+        <div class="flex gap-4">
+            <a href="docs.html" class="text-white transition-colors">Docs</a>
+            <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors" target="_blank">GitHub</a>
+            <a href="https://x.com/Love_Light_11" class="hover:text-copper-400 transition-colors" target="_blank">𝕏</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+.vercel
+.env
+.npmrc
+node_modules/
+dist/
+scratch/
