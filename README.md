@@ -27,7 +27,7 @@ Cursor / Claude / Onchain OS Agents
 ## Core Features
 
 1. **Deterministic Protocol Graph**: Transforms raw unflattened bytecode and ABIs into standard semantic schemas.
-2. **Agentic Intent Compiler (AIC)**: Maps natural language user goals (e.g. "Transfer 10 USDT") into exact EVM calldata, verified by static `eth_call` simulations.
+2. **aic-mcp (AIC)**: Maps natural language user goals (e.g. "Transfer 10 USDT") into exact EVM calldata, verified by static `eth_call` simulations.
 3. **Registry Attestation**: Hashes the compiled graph (SHA-256) and stores the attestation permanently on X Layer's VerRegistry contract, preventing hallucinated contract integrations.
 4. **LLM Fallback Routing**: If the deterministic AIC cannot map a complex semantic intent, it securely prompts an LLM via Anthropic/Gemini APIs using the verified protocol graph as context.
 
@@ -59,7 +59,7 @@ Provide AI tools with native understanding of X Layer smart contracts. Add Ver t
   "mcpServers": {
     "ver": {
       "command": "npx",
-      "args": ["-y", "ver-mcp"],
+      "args": ["-y", "aic-mcp"],
       "env": {
         "XLAYER_RPC_URL": "https://rpc.xlayer.tech"
       }
