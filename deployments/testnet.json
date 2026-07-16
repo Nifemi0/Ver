@@ -1,0 +1,14 @@
+{
+  "network": "X Layer Testnet",
+  "chainId": 1952,
+  "contractName": "VerRegistry",
+  "address": "0x2061045fE42d789a12887D77EBAed26687a49c21",
+  "transactionHash": "0x813b465a970f86f310086e5a4626e3f67eaeb02bea4a3c57fd6abb018396660c",
+  "blockNumber": 35781562,
+  "deployer": "0x2182FB5b8403b262709e0D324b9999Fe15E657b0",
+  "rpc": "https://testrpc.xlayer.tech",
+  "verified": true,
+  "status": "LIVE_ON_XLAYER_TESTNET",
+  "note": "Attestation registry for demo/ASP. Mainnet still pending gas. Do not claim mainnet live.",
+  "timestamp": "2026-07-16T22:00:00.000Z"
+}

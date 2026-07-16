@@ -70,7 +70,7 @@
             border-radius: 2px;
         }
     </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.xlayer.tech;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.xlayer.tech https://testrpc.xlayer.tech https://xlayerrpc.okx.com https://web3.okx.com https://registry.npmjs.org;">
     </head>
 <body class="antialiased min-h-screen flex flex-col justify-between selection:bg-copper-500 selection:text-white">
 <a href="#main-content" class="sr-only focus:not-sr-only">Skip to content</a>
@@ -84,7 +84,9 @@
     </a>
     
     <div class="flex items-center gap-6 text-xs font-mono text-slate-400">
-        <a href="docs.html" class="hover:text-copper-400 transition-colors">Docs</a>
+        <a href="/docs" class="hover:text-copper-400 transition-colors">Docs</a>
+        <a href="/explorer" class="hover:text-copper-400 transition-colors">Explorer</a>
+        <a href="/pricing" class="hover:text-copper-400 transition-colors">Pricing</a>
         <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors flex items-center gap-1.5" target="_blank">
             GitHub
             <span class="material-symbols-outlined text-[12px]">open_in_new</span>
@@ -96,7 +98,7 @@
 </header>
 
 <!-- Main Container -->
-<main id="main-content" class="flex-1 w-full max-w-6xl mx-auto px-6 py-12 sm:py-20 flex flex-col gap-24">
+<main id="main-content" role="main" class="flex-1 w-full max-w-6xl mx-auto px-6 py-12 sm:py-20 flex flex-col gap-24">
     
     <!-- Hero / Split Screen Section -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
@@ -108,17 +110,26 @@
                 Cryptographic<br>attestations of<br>contract <span class="italic font-light text-slate-350">semantics.</span>
             </h1>
             <p class="text-slate-400 text-sm leading-relaxed mb-8">
-                Ver is a semantic compiler and cryptographic registry built specifically for X Layer. It decodes unflattened bytecode, proxies, and ABI structures, hashes their compiled protocol graphs, and anchors them to X Layer mainnet via the VerRegistry contract. Developers and AI agents can query the registry to cryptographically verify contract logic, access-control roles, and event configurations before executing transactions.
+                Ver is a semantic compiler and cryptographic registry built specifically for X Layer. It decodes unflattened bytecode, proxies, and ABI structures, hashes their compiled protocol graphs, and is designed to anchor them to X Layer mainnet via the VerRegistry contract (registry deploy status shown below). Developers and AI agents can query the registry to cryptographically verify contract logic, access-control roles, and event configurations before executing transactions.
             </p>
             
             <div class="border-t border-white/5 pt-6 flex flex-col gap-4">
-                <div class="flex items-center gap-3">
-                    <span class="w-1.5 h-1.5 rounded-full bg-brandMint"></span>
-                    <span class="text-xs font-mono text-slate-400">Mainnet Contract: <a href="https://www.okx.com/web3/explorer/xlayer/address/0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6" target="_blank" class="hover:text-white underline decoration-white/20">0x3776...DA6</a></span>
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-start gap-3">
+                        <span class="w-1.5 h-1.5 mt-1.5 rounded-full bg-emerald-400"></span>
+                        <div class="text-xs font-mono text-slate-400 leading-relaxed">
+                            <div class="text-emerald-400/90 mb-1">VerRegistry — live on X Layer Testnet (chain 1952)</div>
+                            <div class="break-all">
+                                Address:
+                                <a href="https://web3.okx.com/explorer/xlayer-testnet/address/0x2061045fE42d789a12887D77EBAed26687a49c21" target="_blank" rel="noopener" class="hover:text-white underline decoration-white/20">0x2061045fE42d789a12887D77EBAed26687a49c21</a>
+                            </div>
+                            <div class="text-slate-300 mt-1">Attestation demo on testnet. Mainnet registry redeploy still pending — not mainnet-live.</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="bg-white/[0.02] border border-white/5 rounded-lg p-3.5 font-mono text-xs text-slate-300 flex items-center justify-between">
                     <span class="select-all">npx -y aic-mcp</span>
-                    <button aria-label="Copy npx command" onclick="navigator.clipboard.writeText('npx -y aic-mcp'); alert('Command copied!')" class="text-slate-500 hover:text-white transition-colors" title="Copy command">
+                    <button aria-label="Copy npx command" onclick="navigator.clipboard.writeText('npx -y aic-mcp'); alert('Command copied!')" class="text-slate-300 hover:text-white transition-colors" title="Copy command">
                         <span class="material-symbols-outlined text-[16px]">content_copy</span>
                     </button>
                 </div>
@@ -146,7 +157,7 @@
                     </button>
                 </div>
                 
-                <div class="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-500">
+                <div class="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-300">
                     <span>Try:</span>
                     <button onclick="setAddress('0x1E4a5963aBFD975d8c9021ce480b42188849D41d')" class="hover:text-white transition-colors underline decoration-slate-700">USDT (Mainnet)</button>
                     <button onclick="setAddress('0x74b7f16337b8972027f6196a17a631ac6de26d22')" class="hover:text-white transition-colors underline decoration-slate-700">USDC (Mainnet)</button>
@@ -154,7 +165,7 @@
                 </div>
                 
                 <div class="bg-black/70 rounded-xl p-4 border border-white/5 font-mono text-xs text-slate-300 min-h-[250px] max-h-[350px] overflow-y-auto leading-relaxed">
-                    <div id="compilerLogs" class="space-y-1.5 text-slate-450">
+                    <div id="compilerLogs" role="status" aria-live="polite" aria-atomic="false" class="space-y-1.5 text-slate-450">
                         <div>// Compiler ready. Paste an X Layer contract address and click 'Compile Graph' to query verified explorer data, normalize schemas, resolve proxies, and check on-chain registry attestations.</div>
                     </div>
                 </div>
@@ -165,7 +176,7 @@
     <!-- Key Core Capabilities -->
     <section class="flex flex-col gap-12 py-6">
         <div class="max-w-2xl">
-            <div class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-3">Core Pillars</div>
+            <div class="text-xs font-mono text-slate-300 uppercase tracking-widest mb-3">Core Pillars</div>
             <h2 class="text-3xl font-serif text-white tracking-tight leading-snug">
                 Verified blockchain intelligence.
             </h2>
@@ -176,24 +187,24 @@
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-white/5 pt-10">
             <div>
-                <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-4">Pillar 01</span>
+                <span class="text-[10px] font-mono text-slate-300 uppercase tracking-widest block mb-4">Pillar 01</span>
                 <h3 class="font-serif text-lg text-white mb-2">Deterministic Compiling</h3>
                 <p class="text-slate-400 text-xs leading-relaxed">
                     Processes contract ABIs, events, dependencies, and state variables using pure, network-isolated compiler functions. No LLMs are ever allowed to mutate or generate the structural facts of the graph.
                 </p>
             </div>
             <div>
-                <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-4">Pillar 02</span>
+                <span class="text-[10px] font-mono text-slate-300 uppercase tracking-widest block mb-4">Pillar 02</span>
                 <h3 class="font-serif text-lg text-white mb-2">Simulation-Driven Intents</h3>
                 <p class="text-slate-400 text-xs leading-relaxed">
                     Features the Agentic Intent Compiler (AIC) to translate natural language transaction intents into structured payloads. Includes automatic decimal resolution and `eth_call` dry-runs on X Layer to verify safety before execution.
                 </p>
             </div>
             <div>
-                <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-4">Pillar 03</span>
+                <span class="text-[10px] font-mono text-slate-300 uppercase tracking-widest block mb-4">Pillar 03</span>
                 <h3 class="font-serif text-lg text-white mb-2">Registry Attestation</h3>
                 <p class="text-slate-400 text-xs leading-relaxed">
-                    Every compiled protocol graph has its SHA-256 schema hash anchored directly in the VerRegistry contract on X Layer. External IDEs, wallets, and AI agents can query the registry to verify schema integrity.
+                    Compiled protocol graphs are designed to anchor SHA-256 schema hashes in VerRegistry on X Layer once the registry is live. External IDEs, wallets, and AI agents can query the registry to verify schema integrity.
                 </p>
             </div>
         </div>
@@ -209,14 +220,14 @@
             <p class="text-slate-400 text-sm leading-relaxed mb-6">
                 Add Ver to your Cursor or Claude Desktop setup as an MCP server. Once configured, your AI assistant can fetch protocol graphs, read verified events, and write secure integrations without code hallucinations.
             </p>
-            <a href="docs.html#mcp-setup" class="text-xs font-mono text-copper-500 hover:text-copper-600 inline-flex items-center gap-1.5">
+            <a href="/docs#mcp-setup" class="text-xs font-mono text-copper-500 hover:text-copper-600 inline-flex items-center gap-1.5">
                 Read MCP configuration guide
                 <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
             </a>
         </div>
         
         <div class="lg:col-span-7 bg-black/60 rounded-xl p-5 border border-white/5 font-mono text-[11px] sm:text-xs text-slate-300 overflow-x-auto">
-            <div class="text-[10px] text-slate-500 mb-3 border-b border-white/5 pb-2">claude_desktop_config.json</div>
+            <div class="text-[10px] text-slate-300 mb-3 border-b border-white/5 pb-2">claude_desktop_config.json</div>
             <pre class="leading-relaxed text-slate-400"><span class="text-purple-400">"mcpServers"</span>: {
   <span class="text-purple-400">"ver"</span>: {
     <span class="text-purple-400">"command"</span>: <span class="text-emerald-400">"npx"</span>,
@@ -235,7 +246,7 @@
 
 <!-- Footer -->
 <footer class="w-full border-t border-white/5 bg-[#08090B]">
-    <div class="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row justify-between items-center gap-6 text-xs text-slate-500 font-mono">
+    <div class="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row justify-between items-center gap-6 text-xs text-slate-300 font-mono">
         <div class="flex items-center gap-2">
             <span class="material-symbols-outlined text-copper-500 text-lg">terminal</span>
             <span class="font-serif font-bold text-sm text-white">Ver Protocol</span>
@@ -244,7 +255,7 @@
             © 2026 Ver Protocol. Deployed on X Layer.
         </div>
         <div class="flex gap-4">
-            <a href="docs.html" class="hover:text-copper-400 transition-colors">Docs</a>
+            <a href="/docs" class="hover:text-copper-400 transition-colors">Docs</a>
             <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors" target="_blank">GitHub</a>
             <a href="https://x.com/Love_Light_11" class="hover:text-copper-400 transition-colors" target="_blank">𝕏</a>
         </div>
@@ -252,99 +263,135 @@
 </footer>
 
 <script>
+    const XLAYER_RPC = 'https://rpc.xlayer.tech';
+    const REGISTRY = '0x2061045fE42d789a12887D77EBAed26687a49c21';
+    const REGISTRY_CHAIN = { id: 1952, name: 'X Layer Testnet', rpc: 'https://testrpc.xlayer.tech' };
+    let compiling = false;
+
     function setAddress(addr) {
-        document.getElementById('contractAddress').value = addr;
+        const el = document.getElementById('contractAddress');
+        if (el) {
+            el.value = addr;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        const logs = document.getElementById('compilerLogs');
+        if (logs) {
+            logs.innerHTML = '<div class="text-slate-200">> Address set to ' + addr + '. Click Compile Graph.</div>';
+        }
+    }
+
+    function setCompileBusy(busy) {
+        compiling = busy;
+        const btn = document.querySelector('button[onclick="compileContract()"]');
+        if (!btn) return;
+        btn.disabled = busy;
+        btn.setAttribute('aria-busy', busy ? 'true' : 'false');
+        btn.classList.toggle('opacity-60', busy);
+        btn.classList.toggle('pointer-events-none', busy);
+        const label = btn.querySelector('.relative.z-10');
+        if (label) {
+            label.innerHTML = busy
+                ? 'Compiling… <span class="material-symbols-outlined text-sm font-bold animate-pulse">hourglass_top</span>'
+                : 'Compile Graph <span class="material-symbols-outlined text-sm font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span>';
+        }
+    }
+
+    async function ethGetCodeOn(rpc, address) {
+        const res = await fetch(rpc, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0', id: 1,
+                method: 'eth_getCode',
+                params: [address, 'latest']
+            })
+        });
+        const j = await res.json();
+        const code = j.result || '0x';
+        return { hasCode: !!(code && code !== '0x'), codeLen: code.length };
+    }
+    async function ethGetCode(address) {
+        return ethGetCodeOn(XLAYER_RPC, address);
     }
 
     async function compileContract() {
+        if (compiling) return;
         const address = document.getElementById('contractAddress').value.trim();
         const logsDiv = document.getElementById('compilerLogs');
         if (!address.startsWith('0x') || address.length !== 42) {
-            logsDiv.innerHTML = `<div class="text-red-500">> Error: Invalid X Layer address format (must start with 0x and be 42 chars)</div>`;
+            logsDiv.innerHTML = '<div class="text-red-400">> Error: Invalid address (need 0x + 40 hex chars)</div>';
             return;
         }
 
-        logsDiv.innerHTML = `
-            <div class="text-slate-400">> [Compiler] Initializing compilation for address ${address}...</div>
-            <div class="text-slate-500">> [Compiler] Contacting Blockscout explorer API on Chain ID 196 (X Layer)...</div>
-        `;
-        logsDiv.scrollTop = logsDiv.scrollHeight;
+        setCompileBusy(true);
+        logsDiv.innerHTML = '';
+        appendLog('> [Compiler] Starting for ' + address, 'text-slate-200');
+        appendLog('> [Compiler] Checking bytecode on X Layer (chainId 196)…', 'text-slate-300');
 
         try {
-            const response = await fetch(`/api/compile?address=${address}`);
-            const data = await response.json();
-            
-            if (response.ok && data.metadata) {
-                setTimeout(() => {
-                    appendLog(`> [Compiler] Source code ABI alignment verified.`, 'text-slate-500');
-                }, 400);
-                setTimeout(() => {
-                    appendLog(`> [Compiler] Multi-tier proxy check completed.`, 'text-slate-500');
-                }, 800);
-                setTimeout(() => {
-                    appendLog(`> [Compiler] Querying VerRegistry on-chain status...`, 'text-slate-500');
-                }, 1200);
-                setTimeout(() => {
-                    appendLog(`> [Compiler] SUCCESS: Outputting schema and registry attestation:`, 'text-emerald-400 font-semibold');
-                    renderJson(data);
-                }, 1600);
+            const codeInfo = await ethGetCode(address);
+            if (!codeInfo.hasCode) {
+                appendLog('> [Compiler] No contract bytecode at this address on X Layer.', 'text-amber-400');
+                appendLog('> Tip: use a real X Layer contract (e.g. USDT sample) or deploy first.', 'text-slate-300');
+                return;
+            }
+            appendLog('> [Compiler] Bytecode found (len ' + codeInfo.codeLen + ').', 'text-emerald-400');
+
+            let regStatus = 'unknown';
+            try {
+                const reg = await ethGetCodeOn(REGISTRY_CHAIN.rpc, REGISTRY);
+                regStatus = reg.hasCode ? ('LIVE on ' + REGISTRY_CHAIN.name) : ('NOT LIVE on ' + REGISTRY_CHAIN.name);
+                appendLog('> [Registry] ' + REGISTRY.slice(0, 10) + '… → ' + regStatus, reg.hasCode ? 'text-emerald-400' : 'text-amber-400');
+            } catch (e) {
+                appendLog('> [Registry] Could not check registry: ' + (e.message || e), 'text-amber-400');
+            }
+
+            appendLog('> [Compiler] Calling /api/compile…', 'text-slate-300');
+            const response = await fetch('/api/compile?address=' + encodeURIComponent(address), {
+                headers: { 'accept': 'application/json' }
+            });
+            let data = null;
+            try { data = await response.json(); } catch (_) { data = null; }
+
+            if (response.ok && data && (data.metadata || data.graph || data.protocol || data.nodes || data.structural)) {
+                appendLog('> [Compiler] SUCCESS — protocol graph returned.', 'text-emerald-400 font-semibold');
+                if (data.metadata) {
+                    data.metadata.registry_address = REGISTRY;
+                    data.metadata.registry_live_on_xlayer = /LIVE/.test(regStatus);
+                    if (!data.metadata.registry_live_on_xlayer) {
+                        data.metadata.registry_attested = false;
+                        data.metadata.registry_note = 'Registry address has no bytecode on X Layer yet';
+                    }
+                }
+                renderJson(data);
             } else {
-                throw new Error(data.error || 'Compilation failed');
+                const err = (data && (data.error || data.message)) || ('HTTP ' + response.status);
+                appendLog('> [Compiler] API compile failed: ' + err, 'text-amber-400');
+                appendLog('> [Compiler] On-chain probe only — no mock attestation.', 'text-slate-300');
+                renderJson({
+                    ok: false,
+                    mode: 'onchain_probe_only',
+                    contract_address: address,
+                    chainId: 196,
+                    has_bytecode: true,
+                    code_len: codeInfo.codeLen,
+                    registry: { address: REGISTRY, status: regStatus, attested: false },
+                    next: 'Fix /api/compile on the host or use MCP: npx -y aic-mcp'
+                });
             }
         } catch (error) {
-            setTimeout(() => {
-                appendLog(`> [Compiler] Local verification fallback for X Layer...`, 'text-amber-500');
-            }, 400);
-            setTimeout(() => {
-                appendLog(`> [Compiler] Extracting deterministic structural layout...`, 'text-slate-500');
-            }, 800);
-            setTimeout(() => {
-                appendLog(`> [Compiler] Querying VerRegistry mainnet anchor...`, 'text-slate-500');
-            }, 1200);
-            setTimeout(() => {
-                appendLog(`> [Compiler] COMPILATION SUCCESSFUL. Hash anchored on-chain.`, 'text-emerald-400');
-                
-                const mockOutput = {
-                    metadata: {
-                        protocol_name: "Ver Attested Contract",
-                        contract_address: address,
-                        compiler_version: "solc-0.8.20",
-                        cache_status: "HIT",
-                        registry_attested: true,
-                        registry_address: "0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6"
-                    },
-                    structural: {
-                        roles: ["Owner", "Admin"],
-                        dependencies: [
-                            { target_address_or_interface: "0x0000000000000000000000000000000000000000", type: "Constructor" }
-                        ],
-                        events: ["Transfer(address,address,uint256)", "Approval(address,address,uint256)"]
-                    },
-                    semantic: {
-                        intent: "Standard ERC20 Token representation for accounting and value transfers.",
-                        user_goal: "Transfer value and manage transaction permissions.",
-                        confidence: 1.0,
-                        verified: true
-                    },
-                    security: {
-                        guardrails: ["Requires approval before transferFrom", "Maximum supply is capped at creation"],
-                        privileged_functions: ["mint(address,uint256)", "burn(uint256)"],
-                        confidence: 0.95,
-                        verified: true
-                    }
-                };
-                
-                setTimeout(() => {
-                    renderJson(mockOutput);
-                }, 1600);
-            }, 1600);
+            appendLog('> [Compiler] Error: ' + (error.message || error), 'text-red-400');
+            appendLog('> Check network/CSP/RPC. No fake success output.', 'text-slate-300');
+        } finally {
+            setCompileBusy(false);
         }
     }
 
     function appendLog(text, className) {
         const logsDiv = document.getElementById('compilerLogs');
+        if (!logsDiv) return;
         const d = document.createElement('div');
-        d.className = className || '';
+        d.className = className || 'text-slate-300';
         d.innerText = text;
         logsDiv.appendChild(d);
         logsDiv.scrollTop = logsDiv.scrollHeight;
@@ -352,27 +399,18 @@
 
     function renderJson(obj) {
         const logsDiv = document.getElementById('compilerLogs');
+        if (!logsDiv) return;
         const pre = document.createElement('pre');
-        pre.className = 'text-slate-300 bg-white/[0.02] p-4 rounded-xl border border-white/5 mt-3 overflow-x-auto whitespace-pre-wrap leading-relaxed';
-        
+        pre.className = 'text-slate-200 bg-white/[0.02] p-4 rounded-xl border border-white/5 mt-3 overflow-x-auto whitespace-pre-wrap leading-relaxed';
         let jsonStr = JSON.stringify(obj, null, 2);
         jsonStr = jsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const highlighted = jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
+        const highlighted = jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
             let cls = 'json-number';
-            if (/^"/.test(match)) {
-                if (/:$/.test(match)) {
-                    cls = 'json-key';
-                } else {
-                    cls = 'json-string';
-                }
-            } else if (/true|false/.test(match)) {
-                cls = 'json-boolean';
-            } else if (/null/.test(match)) {
-                cls = 'json-null';
-            }
+            if (/^"/.test(match)) cls = /:$/.test(match) ? 'json-key' : 'json-string';
+            else if (/true|false/.test(match)) cls = 'json-boolean';
+            else if (/null/.test(match)) cls = 'json-null';
             return '<span class="' + cls + '">' + match + '</span>';
         });
-
         pre.innerHTML = highlighted;
         logsDiv.appendChild(pre);
         logsDiv.scrollTop = logsDiv.scrollHeight;

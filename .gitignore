@@ -4,3 +4,19 @@
 node_modules/
 dist/
 scratch/
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+.npmrc
+**/*private*key*
+**/secrets*
+.shipguard/
+
+# contracts build
+contracts/node_modules/
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+contracts/coverage/

@@ -38,6 +38,17 @@ app.get("/swagger.json", (req, res) => {
 
 const client = new VerClient();
 
+// Health check (static + API)
+app.get(["/health", "/api/health"], (_req, res) => {
+    res.status(200).json({
+        ok: true,
+        service: "ver-protocol",
+        package: "aic-mcp",
+        chainId: 196,
+        time: new Date().toISOString(),
+    });
+});
+
 // Simple in-memory IP rate limiter for basic protection
 const ipCache = new Map<string, { count: number; lastReset: number }>();
 const LIMIT = 30; // 30 requests per minute

@@ -109,7 +109,7 @@ Point at:
 
 ### 2:45 — End card
 > “Ver — protocol intelligence for X Layer.  
-> `npx -y aic-mcp` · npm · GitHub · aic-mcp.vercel.app”
+> `npx -y aic-mcp` · npm · GitHub · verprotocol.vercel.app”
 
 ---
 
@@ -244,6 +244,6 @@ npm run dashboard
 
 ## Version / package
 
-- npm: `aic-mcp@1.0.9-beta.0`
+- npm: `aic-mcp@1.0.2`
 - Local path: `/root/xlayer`
 - Registry (X Layer Mainnet): `0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6` · [explorer](https://www.oklink.com/xlayer/address/0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6)

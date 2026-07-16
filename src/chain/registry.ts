@@ -28,22 +28,23 @@ const REGISTRY_ABI = [
   },
 ] as const;
 
-// VerRegistry on X Layer Mainnet (see deployments/mainnet.json).
-// Override with REGISTRY_CHAIN_ID / REGISTRY_RPC_URL for testnet or custom RPCs.
+// VerRegistry default: X Layer Testnet (see deployments/testnet.json).
+// Mainnet pending redeploy. Override with REGISTRY_ADDRESS / REGISTRY_CHAIN_ID / REGISTRY_RPC_URL.
 const DEFAULT_REGISTRY_ADDRESS =
-  "0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6" as const;
+  "0x2061045fE42d789a12887D77EBAed26687a49c21" as const;
 
 const XLAYER_CHAIN = {
-  id: Number(process.env.REGISTRY_CHAIN_ID ?? 196),
-  name: process.env.REGISTRY_CHAIN_NAME ?? "X Layer Mainnet",
+  id: Number(process.env.REGISTRY_CHAIN_ID ?? 1952),
+  name: process.env.REGISTRY_CHAIN_NAME ?? "X Layer Testnet",
   nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
   rpcUrls: {
     default: {
       http: [
         process.env.REGISTRY_RPC_URL ??
+          process.env.XLAYER_TESTNET_RPC_URL ??
           process.env.XLAYER_RPC_URL ??
           process.env.RPC_URL ??
-          "https://rpc.xlayer.tech",
+          "https://testrpc.xlayer.tech",
       ],
     },
   },
@@ -79,6 +80,13 @@ export async function lookupGraph(protocolAddress: string): Promise<RegistryAtte
   if (registryAddress === '0x0000000000000000000000000000000000000000') return null;
 
   try {
+    // Soft-fail when registry not deployed / empty bytecode
+    const code = await publicClient.getBytecode({ address: registryAddress });
+    if (!code || code === '0x') {
+      console.warn(`[Registry] No bytecode at ${registryAddress} — attestation unavailable`);
+      return null;
+    }
+
     const data = await publicClient.readContract({
       address: registryAddress,
       abi: REGISTRY_ABI,
@@ -115,9 +123,16 @@ export async function registerGraph(protocolAddress: string, graphHash: string, 
   const publicClient = getPublicClient();
   
   try {
+    const registryAddress = getRegistryAddress();
+    const code = await publicClient.getBytecode({ address: registryAddress });
+    if (!code || code === '0x') {
+      console.error(`[Registry] Cannot attest — no bytecode at ${registryAddress}`);
+      return null;
+    }
+
     const { request } = await publicClient.simulateContract({
       account,
-      address: getRegistryAddress(),
+      address: registryAddress,
       abi: REGISTRY_ABI,
       functionName: 'attest',
       args: [protocolAddress as Address, graphHash as `0x${string}`, metadataURI],
