@@ -1,6 +1,6 @@
 # XLayer Programmatic SDK Guide
 
-The `xlayer-mcp` package exports the `XLayerClient` class, allowing you to programmatically access all the compiler pipeline stages, semantic reasoning, transaction simulations, and decoding layers inside your Node.js/TypeScript applications.
+The `aic-mcp` package exports the `VerClient` class, allowing you to programmatically access all the compiler pipeline stages, semantic reasoning, transaction simulations, and decoding layers inside your Node.js/TypeScript applications.
 
 ---
 
@@ -9,7 +9,7 @@ The `xlayer-mcp` package exports the `XLayerClient` class, allowing you to progr
 First, install the library in your project:
 
 ```bash
-npm install xlayer-mcp
+npm install aic-mcp
 ```
 
 Make sure your environment variables are configured (e.g., in a `.env` file):
@@ -28,10 +28,10 @@ OPENAI_API_KEY=your-api-key
 Initialize the client and compile a protocol graph:
 
 ```typescript
-import { XLayerClient } from "xlayer-mcp";
+import { VerClient } from "aic-mcp";
 
 // Initialize client
-const client = new XLayerClient();
+const client = new VerClient();
 
 async function main() {
   const address = "0x1E4a5963aBFD975d8c9021ce480b42188849D41d"; // Sample Contract
@@ -51,15 +51,15 @@ main().catch(console.error);
 
 ## 3. SDK API Reference
 
-The `XLayerClient` class exposes the following methods:
+The `VerClient` class exposes the following methods:
 
-### `getProtocolGraph(address: string, forceRefresh?: boolean): Promise<XLayerSchema>`
+### `getProtocolGraph(address: string, forceRefresh?: boolean): Promise<VerSchema>`
 Compiles the target contract into a full structured JSON graph.
 
 * **Parameters:**
   * `address`: The EVM address of the smart contract.
   * `forceRefresh` (Optional): Set to `true` to bypass cache and re-compile/re-fetch.
-* **Returns:** An `XLayerSchema` object containing structural details, semantic intent, security guardrails, and developer integration notes.
+* **Returns:** An `VerSchema` object containing structural details, semantic intent, security guardrails, and developer integration notes.
 
 ### `getContractSummary(address: string): Promise<ContractSummary>`
 A helper that extracts a lightweight, developer-friendly overview of the contract.
@@ -128,9 +128,9 @@ Searches structural elements (roles, events, privileged functions) by a keyword 
 Verify that an outgoing transaction does not trigger a privileged or dangerous role method:
 
 ```typescript
-import { XLayerClient } from "xlayer-mcp";
+import { VerClient } from "aic-mcp";
 
-const client = new XLayerClient();
+const client = new VerClient();
 
 async function preSignCheck(targetContract: string, calldata: string) {
   try {
@@ -155,9 +155,9 @@ async function preSignCheck(targetContract: string, calldata: string) {
 Gather structural permissions configuration across multiple contracts:
 
 ```typescript
-import { XLayerClient } from "xlayer-mcp";
+import { VerClient } from "aic-mcp";
 
-const client = new XLayerClient();
+const client = new VerClient();
 
 async function inspectPermissions(contracts: string[]) {
   for (const address of contracts) {

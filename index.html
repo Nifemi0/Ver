@@ -70,8 +70,10 @@
             border-radius: 2px;
         }
     </style>
-</head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.xlayer.tech;">
+    </head>
 <body class="antialiased min-h-screen flex flex-col justify-between selection:bg-copper-500 selection:text-white">
+<a href="#main-content" class="sr-only focus:not-sr-only">Skip to content</a>
 
 <!-- Minimal Header -->
 <header class="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between border-b border-white/5">
@@ -94,7 +96,7 @@
 </header>
 
 <!-- Main Container -->
-<main class="flex-1 w-full max-w-6xl mx-auto px-6 py-12 sm:py-20 flex flex-col gap-24">
+<main id="main-content" class="flex-1 w-full max-w-6xl mx-auto px-6 py-12 sm:py-20 flex flex-col gap-24">
     
     <!-- Hero / Split Screen Section -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
@@ -112,11 +114,11 @@
             <div class="border-t border-white/5 pt-6 flex flex-col gap-4">
                 <div class="flex items-center gap-3">
                     <span class="w-1.5 h-1.5 rounded-full bg-brandMint"></span>
-                    <span class="text-xs font-mono text-slate-400">Mainnet Contract: <a href="https://xlayer.blockscout.com/address/0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6" target="_blank" class="hover:text-white underline decoration-white/20">0x3776...DA6</a></span>
+                    <span class="text-xs font-mono text-slate-400">Mainnet Contract: <a href="https://www.okx.com/web3/explorer/xlayer/address/0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6" target="_blank" class="hover:text-white underline decoration-white/20">0x3776...DA6</a></span>
                 </div>
                 <div class="bg-white/[0.02] border border-white/5 rounded-lg p-3.5 font-mono text-xs text-slate-300 flex items-center justify-between">
                     <span class="select-all">npx -y aic-mcp</span>
-                    <button onclick="navigator.clipboard.writeText('npx -y aic-mcp'); alert('Command copied!')" class="text-slate-500 hover:text-white transition-colors" title="Copy command">
+                    <button aria-label="Copy npx command" onclick="navigator.clipboard.writeText('npx -y aic-mcp'); alert('Command copied!')" class="text-slate-500 hover:text-white transition-colors" title="Copy command">
                         <span class="material-symbols-outlined text-[16px]">content_copy</span>
                     </button>
                 </div>
