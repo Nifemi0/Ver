@@ -113,19 +113,7 @@
             </p>
             
             <div class="border-t border-white/5 pt-6 flex flex-col gap-4">
-                <div class="flex flex-col gap-2">
-                    <div class="flex items-start gap-3">
-                        <span class="w-1.5 h-1.5 mt-1.5 rounded-full bg-emerald-400"></span>
-                        <div class="text-xs font-mono text-slate-300 leading-relaxed">
-                            <div class="text-emerald-400/90 mb-1">VerRegistry — live on X Layer Testnet (chain 1952)</div>
-                            <div class="break-all">
-                                Address:
-                                <a href="https://www.oklink.com/explorer/xlayer-testnet/address/0x2061045fE42d789a12887D77EBAed26687a49c21" target="_blank" rel="noopener" class="hover:text-white underline decoration-white/20">0x2061045fE42d789a12887D77EBAed26687a49c21</a>
-                            </div>
-                            <div class="text-slate-300 mt-1">Attestation demo on testnet. Mainnet registry redeploy still pending — not mainnet-live.</div>
-                        </div>
-                    </div>
-                </div>
+
                 <div class="bg-white/[0.02] border border-white/5 rounded-lg p-3.5 font-mono text-xs text-slate-300 flex items-center justify-between">
                     <span class="select-all">npx -y aic-mcp</span>
                     <button aria-label="Copy npx command" onclick="navigator.clipboard.writeText('npx -y aic-mcp'); alert('Command copied!')" class="text-slate-300 hover:text-white transition-colors" title="Copy command">
@@ -199,13 +187,7 @@
                     Features the Agentic Intent Compiler (AIC) to translate natural language transaction intents into structured payloads. Includes automatic decimal resolution and `eth_call` dry-runs on X Layer to verify safety before execution.
                 </p>
             </div>
-            <div>
-                <span class="text-[10px] font-mono text-slate-300 uppercase tracking-widest block mb-4">Pillar 03</span>
-                <h3 class="font-serif text-lg text-white mb-2">Registry Attestation</h3>
-                <p class="text-slate-400 text-xs leading-relaxed">
-                    Compiled protocol graphs are designed to anchor SHA-256 schema hashes in VerRegistry on X Layer once the registry is live. External IDEs, wallets, and AI agents can query the registry to verify schema integrity.
-                </p>
-            </div>
+
         </div>
     </section>
 
