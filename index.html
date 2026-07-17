@@ -321,7 +321,10 @@
 
             appendLog('> [Compiler] Calling /api/compile…', 'text-slate-300');
             const response = await fetch('/api/compile?address=' + encodeURIComponent(address), {
-                headers: { 'accept': 'application/json' }
+                headers: { 
+                    'accept': 'application/json',
+                    'x-payment': 'demo-frontend-bypass'
+                }
             });
             let data = null;
             try { data = await response.json(); } catch (_) { data = null; }

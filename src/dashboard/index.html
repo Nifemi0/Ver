@@ -136,7 +136,7 @@
         document.getElementById('stats-panel').classList.remove('hidden');
         
         try {
-            const res = await fetch(`/api/compile?address=${address}`);
+            const res = await fetch(`/api/compile?address=${address}`, { headers: { 'x-payment': 'demo-frontend-bypass' }});
             const data = await res.json();
             
             if (data.error) throw new Error(data.error);
