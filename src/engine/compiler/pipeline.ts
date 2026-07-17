@@ -24,7 +24,6 @@ import { IntegrityBuilder, IntegrityScorer } from "./integrity.scorer";
 import { GraphAssembler } from "./graph.assembler";
 import { VerSchema } from "../../types/schema";
 import crypto from "crypto";
-import { lookupGraph } from "../../chain/registry";
 
 
 export class CompilerPipeline {
@@ -89,7 +88,7 @@ export class CompilerPipeline {
         const graph = this.assembler.assemble(input, roles, events, functions, deps, score, extractionTimeMs);
         diagnostics.stage_times['GraphAssembler'] = performance.now() - assembleStart;
 
-        // 7. Hash & Registry Lookup
+        // 7. Hash Generation (Off-chain)
         const registryStart = performance.now();
         // Create a deterministic hash string (sort keys to be safe, but JSON.stringify on structured data is usually deterministic here since order is defined by Schema)
         const hashInput = JSON.stringify({
@@ -101,26 +100,13 @@ export class CompilerPipeline {
         });
         const graphHash = "0x" + crypto.createHash("sha256").update(hashInput).digest("hex");
         
-        const attestation = await lookupGraph(input.address);
-        const ZERO =
-          "0x0000000000000000000000000000000000000000000000000000000000000000";
-        const hasAttestation = !!(
-          attestation &&
-          attestation.verified &&
-          attestation.graphHash &&
-          attestation.graphHash !== ZERO
-        );
-
         graph.registry = {
-            registered: hasAttestation,
-            verified: hasAttestation && attestation!.graphHash === graphHash,
+            registered: false,
+            verified: false,
             graphHash: graphHash,
-            metadataURI: hasAttestation ? attestation!.metadataURI : "",
-            registryAddress:
-              process.env.REGISTRY_ADDRESS ||
-              process.env.NEXT_PUBLIC_REGISTRY_ADDRESS ||
-              "0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6",
-            deploymentNetwork: "X Layer Mainnet"
+            metadataURI: "",
+            registryAddress: "0x0000000000000000000000000000000000000000",
+            deploymentNetwork: "Off-Chain Only"
         };
         diagnostics.stage_times['RegistryLookup'] = performance.now() - registryStart;
 
