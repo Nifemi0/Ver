@@ -116,7 +116,7 @@ const x402Middleware = (req: express.Request, res: express.Response, next: expre
 
 const handler = async (req: express.Request, res: express.Response) => {
     try {
-        const address = req.query.address as string;
+        const address = (req.query.address || req.body?.address) as string;
         if (!address || !isAddress(address)) {
             return res.status(400).json({ 
                 error: "Invalid contract address",
@@ -145,7 +145,9 @@ const handler = async (req: express.Request, res: express.Response) => {
 };
 
 app.get("/api/compile", rateLimiter, x402Middleware, handler);
+app.post("/api/compile", rateLimiter, x402Middleware, handler);
 app.get("/api/analyze", rateLimiter, x402Middleware, handler);
+app.post("/api/analyze", rateLimiter, x402Middleware, handler);
 
 // Vercel routes everything under /api to this file if named api/index.ts.
 // But to be safe for root matching if we rewrite:
