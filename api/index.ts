@@ -116,7 +116,7 @@ const x402Middleware = (req: express.Request, res: express.Response, next: expre
 
 const handler = async (req: express.Request, res: express.Response) => {
     try {
-        const address = (req.query.address || req.body?.address) as string;
+        const address = (req.query.address || req.body?.address || req.body?.arguments?.address || req.body?.params?.address) as string;
         if (!address || !isAddress(address)) {
             return res.status(400).json({ 
                 error: "Invalid contract address",
@@ -158,7 +158,8 @@ app.get("/api", (req, res) => {
 // AIC Intent Compilation Endpoint
 app.post("/api/compile-intent", rateLimiter, x402Middleware, async (req, res) => {
     try {
-        const { contractAddress, intent } = req.body;
+        const contractAddress = (req.body?.contractAddress || req.body?.arguments?.contractAddress || req.body?.params?.contractAddress || req.query.contractAddress) as string;
+        const intent = (req.body?.intent || req.body?.arguments?.intent || req.body?.params?.intent || req.query.intent) as string;
         if (!contractAddress || !isAddress(contractAddress)) {
             return res.status(400).json({ error: "Invalid contract address", expected: "0x-prefixed EVM address" });
         }
