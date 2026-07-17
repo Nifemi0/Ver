@@ -1,6 +1,6 @@
 {
   "name": "aic-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Deterministic Protocol Intelligence compiler for AI. Compiles smart contracts into Protocol Graphs via MCP.",
   "main": "dist/sdk/client.js",
   "module": "dist/sdk/client.mjs",
