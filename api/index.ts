@@ -79,6 +79,41 @@ const rateLimiter = (req: express.Request, res: express.Response, next: express.
     next();
 };
 
+const x402Middleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // If request has payment signature (x402 verification)
+    if (req.headers["x-payment"] || req.headers["authorization"] || req.headers["payment-signature"]) {
+        return next();
+    }
+    
+    // Unpaid request -> return 402 challenge
+    const challenge = {
+        x402Version: 2,
+        resource: {
+            url: `https://${req.get("host") || "verprotocol.vercel.app"}${req.originalUrl}`,
+            description: "Semantic Protocol Graph Compilation service for AI Agents",
+            mimeType: "application/json"
+        },
+        accepts: [
+            {
+                scheme: "exact",
+                network: "eip155:196",
+                asset: "0x779ded0c9e1022225f8e0630b35a9b54be713736",
+                amount: "0", // Free for hackathon
+                payTo: "0xb5b537d10b671d8f4f25b7f78aa12871cbdc2424",
+                maxTimeoutSeconds: 300,
+                extra: { name: "USD₮0", version: "1" }
+            }
+        ]
+    };
+    
+    const base64Challenge = Buffer.from(JSON.stringify(challenge)).toString("base64");
+    res.setHeader("PAYMENT-REQUIRED", base64Challenge);
+    return res.status(402).json({ 
+        error: "Payment Required", 
+        message: "This endpoint requires x402 payment protocol." 
+    });
+};
+
 const handler = async (req: express.Request, res: express.Response) => {
     try {
         const address = req.query.address as string;
@@ -109,8 +144,8 @@ const handler = async (req: express.Request, res: express.Response) => {
     }
 };
 
-app.get("/api/compile", rateLimiter, handler);
-app.get("/api/analyze", rateLimiter, handler);
+app.get("/api/compile", rateLimiter, x402Middleware, handler);
+app.get("/api/analyze", rateLimiter, x402Middleware, handler);
 
 // Vercel routes everything under /api to this file if named api/index.ts.
 // But to be safe for root matching if we rewrite:
@@ -119,7 +154,7 @@ app.get("/api", (req, res) => {
 });
 
 // AIC Intent Compilation Endpoint
-app.post("/api/compile-intent", rateLimiter, async (req, res) => {
+app.post("/api/compile-intent", rateLimiter, x402Middleware, async (req, res) => {
     try {
         const { contractAddress, intent } = req.body;
         if (!contractAddress || !isAddress(contractAddress)) {
@@ -137,7 +172,7 @@ app.post("/api/compile-intent", rateLimiter, async (req, res) => {
 });
 
 // Also support GET for simple testing if needed
-app.get("/api/compile-intent", rateLimiter, async (req, res) => {
+app.get("/api/compile-intent", rateLimiter, x402Middleware, async (req, res) => {
     try {
         const contractAddress = req.query.contractAddress as string;
         const intent = req.query.intent as string;
