@@ -115,40 +115,19 @@ server.tool(
 
 server.tool(
     "lookup_graph_attestation",
-    "Lookup the on-chain X Layer Mainnet attestation for a compiled protocol graph",
+    "(Planned) Lookup the on-chain attestation for a compiled protocol graph",
     { address: z.string() },
     async ({ address }) => {
-        try {
-            const attestation = await lookupGraph(address);
-            return { content: [{ type: "text", text: JSON.stringify(attestation || { error: "No attestation found on X Layer" }, null, 2) }] };
-        } catch (e: any) {
-            return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
-        }
+        return { content: [{ type: "text", text: JSON.stringify({ message: "Attestation registry is currently offline or planned for a future release." }, null, 2) }] };
     }
 );
 
 server.tool(
     "register_protocol_graph",
-    "Register a deterministic protocol graph hash to the X Layer Mainnet",
+    "(Planned) Register a deterministic protocol graph hash to the blockchain",
     { address: z.string(), graphHash: z.string(), metadataURI: z.string() },
     async ({ address, graphHash, metadataURI }) => {
-        if (process.env.VER_ENABLE_WRITES !== "true") {
-            return { 
-                content: [{ 
-                    type: "text", 
-                    text: JSON.stringify({ 
-                        error: "Write operations are disabled by default on this MCP server. To enable registry attestations, set VER_ENABLE_WRITES=true in your environment variables." 
-                    }, null, 2) 
-                }], 
-                isError: true 
-            };
-        }
-        try {
-            const txHash = await registerGraph(address, graphHash, metadataURI);
-            return { content: [{ type: "text", text: JSON.stringify({ txHash, status: "success" }, null, 2) }] };
-        } catch (e: any) {
-            return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
-        }
+        return { content: [{ type: "text", text: JSON.stringify({ message: "Attestation registry is currently offline or planned for a future release." }, null, 2) }] };
     }
 );
 
