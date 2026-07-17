@@ -41,7 +41,7 @@
     "postinstall": "node scripts/postinstall.js"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "keywords": [
     "xlayer",
