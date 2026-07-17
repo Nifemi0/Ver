@@ -33,20 +33,12 @@
 |-------|--------|
 | **Product name** | Ver Protocol |
 | **Live site** | https://verprotocol.vercel.app |
-| **Explorer** | https://verprotocol.vercel.app/explorer.html |
 | **Docs** | https://verprotocol.vercel.app/docs.html |
 | **GitHub** | https://github.com/Nifemi0/Ver |
 | **npm / MCP** | https://www.npmjs.com/package/aic-mcp · `npx -y aic-mcp` |
 | **X** | https://x.com/Love_Light_11 |
 | **Chain** | X Layer Mainnet · chainId **196** |
 | **Sample contract (USDT)** | `0x1E4a5963aBFD975d8c9021ce480b42188849D41d` |
-| **VerRegistry (planned anchor)** | `0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6` |
-
-### Honesty note (do not skip)
-
-Local deploy note: `NOT_LIVE_ON_XLAYER` — `eth_getCode` on `rpc.xlayer.tech` returns empty for that registry address (same address was used on HashKey earlier).  
-
-**In form/X:** say Protocol Graph compile + MCP are live; **on-chain registry attestation on X Layer is pending redeploy** (needs gas on deployer). Do **not** claim live mainnet registry attestation until redeployed.
 
 ---
 
@@ -139,15 +131,13 @@ Ver Protocol
 Deterministic Protocol Graphs + intent→calldata for X Layer contracts, served as MCP so agents don’t hallucinate ABIs.
 
 **Long description**  
-Ver is a semantic compiler and agent service for X Layer. It fetches verified contract artifacts, builds a deterministic Protocol Graph, and exposes compile + natural-language intent compilation through MCP (`aic-mcp`) and HTTP. Agents (Hermes, Claude Code, Cursor, Onchain OS) get chain-grounded structure and calldata instead of free-text ABI guesses. Built for OKX’s agent stack on X Layer. On-chain VerRegistry attestation is designed for X Layer; redeploy pending gas — compile/MCP path is live today at verprotocol.vercel.app.
+Ver is a semantic compiler and agent service for X Layer. It fetches verified contract artifacts, builds a deterministic Protocol Graph, and exposes compile + natural-language intent compilation through MCP (`aic-mcp`) and HTTP. Agents (Hermes, Claude Code, Cursor, Onchain OS) get chain-grounded structure and calldata instead of free-text ABI guesses. Built for OKX’s agent stack on X Layer. The compile/MCP path is live today at verprotocol.vercel.app.
 
 **Category / type**  
 A2MCP · Developer infrastructure · AI × On-chain
 
 **Demo link**  
 https://verprotocol.vercel.app  
-https://verprotocol.vercel.app/explorer.html
-
 **Repo**  
 https://github.com/Nifemi0/Ver
 
@@ -209,9 +199,8 @@ Use `DEMO.md` timing if you already cut a reel. Cap **≤90 seconds**.
 
 ## What is NOT ready (don’t claim)
 
-- Live **VerRegistry bytecode on X Layer** until funded redeploy (`0xCbe7…` often 0 OKB).  
 - Any HashGraph / HashKey mainnet traction as Ver metrics.  
-- Fake user counts, revenue, or “mainnet attested graphs” without proof.
+- Fake user counts or revenue without proof.
 
 ---
 

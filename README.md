@@ -2,7 +2,7 @@
 
 **Deterministic by design. Explainable by AI.**
 
-Ver is a semantic layer and cryptographic attestation protocol built specifically for **X Layer**. It compiles deterministic blockchain artifacts (ABIs, Bytecode, state variables) into an AI-readable Protocol Graph that IDEs, wallets, AI agents, and developer tools can consume natively via MCP.
+Ver is a semantic layer protocol. It compiles deterministic blockchain artifacts (ABIs, Bytecode, state variables) into an AI-readable Protocol Graph that IDEs, wallets, AI agents, and developer tools can consume natively via MCP.
 
 ---
 
@@ -17,8 +17,6 @@ Deterministic Parser
       ↓
 Ver Protocol Schema
       ↓
-VerRegistry (X Layer Anchor)
-      ↓
 MCP Server / API Endpoint
       ↓
 Cursor / Claude / Onchain OS Agents
@@ -28,7 +26,6 @@ Cursor / Claude / Onchain OS Agents
 
 1. **Deterministic Protocol Graph**: Transforms raw unflattened bytecode and ABIs into standard semantic schemas.
 2. **Agentic Intent Compiler (AIC)**: Maps natural language user goals (e.g. "Transfer 10 USDT") into exact EVM calldata, verified by static `eth_call` simulations.
-3. **Registry Attestation**: Hashes the compiled graph (SHA-256) and stores the attestation permanently on X Layer's VerRegistry contract, preventing hallucinated contract integrations.
 4. **LLM Fallback Routing**: If the deterministic AIC cannot map a complex semantic intent, it securely prompts an LLM via Anthropic/Gemini APIs using the verified protocol graph as context.
 
 ## Usage
