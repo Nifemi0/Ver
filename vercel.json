@@ -7,9 +7,8 @@
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/docs", "destination": "/docs.html" },
     { "source": "/docs/", "destination": "/docs.html" },
-    { "source": "/sdk", "destination": "/SDK.md" },
-    { "source": "/explorer", "destination": "/explorer.html" },
-    { "source": "/pricing", "destination": "/pricing.html" }
+    { "source": "/sdk", "destination": "/SDK.md" }
+
   ],
   "redirects": [
     { "source": "/login", "destination": "/", "permanent": false },
