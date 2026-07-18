@@ -98,7 +98,7 @@ const x402Middleware = (req: express.Request, res: express.Response, next: expre
                 scheme: "exact",
                 network: "eip155:196",
                 asset: "0x779ded0c9e1022225f8e0630b35a9b54be713736",
-                amount: "0", // Free for hackathon
+                amount: "10000",
                 payTo: "0xb5b537d10b671d8f4f25b7f78aa12871cbdc2424",
                 maxTimeoutSeconds: 300,
                 extra: { name: "USD₮0", version: "1" }
