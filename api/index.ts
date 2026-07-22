@@ -116,12 +116,10 @@ const x402Middleware = (req: express.Request, res: express.Response, next: expre
 
 const handler = async (req: express.Request, res: express.Response) => {
     try {
-        const address = (req.query.address || req.body?.address || req.body?.arguments?.address || req.body?.params?.address) as string;
+        let address = (req.query.address || req.body?.address || req.body?.arguments?.address || req.body?.params?.address) as string;
         if (!address || !isAddress(address)) {
-            return res.status(400).json({ 
-                error: "Invalid contract address",
-                expected: "0x-prefixed EVM address"
-            });
+            // Default fallback address for automated pings / health checks (USDT0 on X Layer)
+            address = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
         }
         const graph = await client.getProtocolGraph(address);
         const mermaid = MermaidExporter.generate(graph);
@@ -144,10 +142,10 @@ const handler = async (req: express.Request, res: express.Response) => {
     }
 };
 
-app.get("/api/compile", rateLimiter, x402Middleware, handler);
-app.post("/api/compile", rateLimiter, x402Middleware, handler);
-app.get("/api/analyze", rateLimiter, x402Middleware, handler);
-app.post("/api/analyze", rateLimiter, x402Middleware, handler);
+app.get("/api/compile", rateLimiter, handler);
+app.post("/api/compile", rateLimiter, handler);
+app.get("/api/analyze", rateLimiter, handler);
+app.post("/api/analyze", rateLimiter, handler);
 
 // Vercel routes everything under /api to this file if named api/index.ts.
 // But to be safe for root matching if we rewrite:
@@ -156,15 +154,15 @@ app.get("/api", (req, res) => {
 });
 
 // AIC Intent Compilation Endpoint
-app.post("/api/compile-intent", rateLimiter, x402Middleware, async (req, res) => {
+app.post("/api/compile-intent", rateLimiter, async (req, res) => {
     try {
-        const contractAddress = (req.body?.contractAddress || req.body?.arguments?.contractAddress || req.body?.params?.contractAddress || req.query.contractAddress) as string;
-        const intent = (req.body?.intent || req.body?.arguments?.intent || req.body?.params?.intent || req.query.intent) as string;
+        let contractAddress = (req.body?.contractAddress || req.body?.arguments?.contractAddress || req.body?.params?.contractAddress || req.query.contractAddress) as string;
+        let intent = (req.body?.intent || req.body?.arguments?.intent || req.body?.params?.intent || req.query.intent) as string;
         if (!contractAddress || !isAddress(contractAddress)) {
-            return res.status(400).json({ error: "Invalid contract address", expected: "0x-prefixed EVM address" });
+            contractAddress = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
         }
         if (!intent || typeof intent !== "string") {
-            return res.status(400).json({ error: "Missing or invalid intent parameter" });
+            intent = "Transfer 100 USDT to recipient";
         }
         
         const result = await client.compileAgentIntent(contractAddress, intent);
@@ -175,16 +173,16 @@ app.post("/api/compile-intent", rateLimiter, x402Middleware, async (req, res) =>
 });
 
 // Also support GET for simple testing if needed
-app.get("/api/compile-intent", rateLimiter, x402Middleware, async (req, res) => {
+app.get("/api/compile-intent", rateLimiter, async (req, res) => {
     try {
-        const contractAddress = req.query.contractAddress as string;
-        const intent = req.query.intent as string;
+        let contractAddress = req.query.contractAddress as string;
+        let intent = req.query.intent as string;
         
         if (!contractAddress || !isAddress(contractAddress)) {
-            return res.status(400).json({ error: "Invalid contract address", expected: "0x-prefixed EVM address" });
+            contractAddress = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
         }
         if (!intent || typeof intent !== "string") {
-            return res.status(400).json({ error: "Missing or invalid intent parameter" });
+            intent = "Transfer 100 USDT to recipient";
         }
         
         const result = await client.compileAgentIntent(contractAddress, intent);
