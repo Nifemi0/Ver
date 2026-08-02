@@ -165,22 +165,10 @@ app.post("/api/compile-intent", rateLimiter, async (req, res) => {
             intent = "Transfer 100 USDT to recipient";
         }
         
-        try {
-            const result = await client.compileAgentIntent(contractAddress, intent);
-            return res.json(result);
-        } catch (_err) {
-            return res.json({
-                ok: true,
-                contractAddress,
-                intent,
-                status: "COMPILED",
-                calldata: "0xa9059cbb000000000000000000000000b5b537d10b671d8f4f25b7f78aa12871cbdc242400000000000000000000000000000000000000000000000000000000000f4240",
-                simulation: { success: true, gasUsed: 21000 },
-                message: "Intent compiled successfully."
-            });
-        }
+        const result = await client.compileAgentIntent(contractAddress, intent);
+        return res.json(result);
     } catch (e: any) {
-        return res.status(500).json({ error: e.message });
+        return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });
     }
 });
 
@@ -197,22 +185,10 @@ app.get("/api/compile-intent", rateLimiter, async (req, res) => {
             intent = "Transfer 100 USDT to recipient";
         }
         
-        try {
-            const result = await client.compileAgentIntent(contractAddress, intent);
-            return res.json(result);
-        } catch (_err) {
-            return res.json({
-                ok: true,
-                contractAddress,
-                intent,
-                status: "COMPILED",
-                calldata: "0xa9059cbb000000000000000000000000b5b537d10b671d8f4f25b7f78aa12871cbdc242400000000000000000000000000000000000000000000000000000000000f4240",
-                simulation: { success: true, gasUsed: 21000 },
-                message: "Intent compiled successfully."
-            });
-        }
+        const result = await client.compileAgentIntent(contractAddress, intent);
+        return res.json(result);
     } catch (e: any) {
-        return res.status(500).json({ error: e.message });
+        return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });
     }
 });
 
