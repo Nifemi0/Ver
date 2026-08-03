@@ -114,24 +114,6 @@ server.tool(
 );
 
 server.tool(
-    "lookup_graph_attestation",
-    "(Planned) Lookup the on-chain attestation for a compiled protocol graph",
-    { address: z.string() },
-    async ({ address }) => {
-        return { content: [{ type: "text", text: JSON.stringify({ message: "Attestation registry is currently offline or planned for a future release." }, null, 2) }] };
-    }
-);
-
-server.tool(
-    "register_protocol_graph",
-    "(Planned) Register a deterministic protocol graph hash to the blockchain",
-    { address: z.string(), graphHash: z.string(), metadataURI: z.string() },
-    async ({ address, graphHash, metadataURI }) => {
-        return { content: [{ type: "text", text: JSON.stringify({ message: "Attestation registry is currently offline or planned for a future release." }, null, 2) }] };
-    }
-);
-
-server.tool(
     "get_token_metadata",
     "Fetches standardized ERC20/ERC721 token metadata (name, symbol, decimals, type)",
     { address: z.string() },

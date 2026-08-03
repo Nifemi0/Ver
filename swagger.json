@@ -1,0 +1,100 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Ver Protocol Compiler API",
+    "description": "Deterministic Protocol Intelligence compiler for AI. Compiles X Layer smart contracts into Protocol Graphs and maps natural-language intent to ABI-verified EVM calldata.",
+    "version": "1.0.5",
+    "contact": { "name": "Ver Protocol", "url": "https://verprotocol.vercel.app" }
+  },
+  "servers": [{ "url": "https://verprotocol.vercel.app" }],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Service healthy",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/api/compile": {
+      "get": {
+        "summary": "Compile a contract into a deterministic Protocol Graph",
+        "description": "Fetches verified contract artifacts and returns a structured graph: roles, functions, events, dependencies, proxy/implementation resolution.",
+        "operationId": "compile",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Contract address (0x...). Defaults to a known X Layer token if omitted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protocol graph + mermaid + trace",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          },
+          "429": { "description": "Rate limited" },
+          "500": { "description": "Compile error" }
+        }
+      },
+      "post": {
+        "summary": "Compile a contract into a deterministic Protocol Graph",
+        "operationId": "compilePost",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "address": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Protocol graph" } }
+      }
+    },
+    "/api/compile-intent": {
+      "post": {
+        "summary": "Map natural-language intent to ABI-verified EVM calldata",
+        "description": "Parses an intent like 'Transfer 10 USDT to 0x...' against the contract ABI and returns the encoded calldata. When a sender is provided, the calldata is additionally simulated with eth_call.",
+        "operationId": "compileIntent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contractAddress": { "type": "string", "description": "Target contract (0x...)" },
+                  "intent": { "type": "string", "description": "Natural language intent" },
+                  "sender": { "type": "string", "description": "Optional sender for eth_call simulation" }
+                },
+                "required": ["contractAddress", "intent"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compiled intent with encoded calldata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "functionName": { "type": "string" },
+                    "args": { "type": "array" },
+                    "encodedCalldata": { "type": "string" },
+                    "simulationStatus": { "enum": ["success", "reverted", "skipped"] }
+                  }
+                }
+              }
+            }
+          },
+          "429": { "description": "Rate limited" },
+          "500": { "description": "Intent compile error" }
+        }
+      }
+    }
+  }
+}

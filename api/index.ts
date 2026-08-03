@@ -158,6 +158,7 @@ app.post("/api/compile-intent", rateLimiter, async (req, res) => {
     try {
         let contractAddress = (req.body?.contractAddress || req.body?.arguments?.contractAddress || req.body?.params?.contractAddress || req.query.contractAddress) as string;
         let intent = (req.body?.intent || req.body?.arguments?.intent || req.body?.params?.intent || req.query.intent) as string;
+        let sender = (req.body?.sender || req.body?.arguments?.sender || req.body?.params?.sender || req.query.sender) as string | undefined;
         if (!contractAddress || !isAddress(contractAddress)) {
             contractAddress = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
         }
@@ -165,7 +166,7 @@ app.post("/api/compile-intent", rateLimiter, async (req, res) => {
             intent = "Transfer 100 USDT to recipient";
         }
         
-        const result = await client.compileAgentIntent(contractAddress, intent);
+        const result = await client.compileAgentIntent(contractAddress, intent, sender);
         return res.json(result);
     } catch (e: any) {
         return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });
@@ -177,6 +178,7 @@ app.get("/api/compile-intent", rateLimiter, async (req, res) => {
     try {
         let contractAddress = req.query.contractAddress as string;
         let intent = req.query.intent as string;
+        let sender = req.query.sender as string | undefined;
         
         if (!contractAddress || !isAddress(contractAddress)) {
             contractAddress = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
@@ -185,7 +187,7 @@ app.get("/api/compile-intent", rateLimiter, async (req, res) => {
             intent = "Transfer 100 USDT to recipient";
         }
         
-        const result = await client.compileAgentIntent(contractAddress, intent);
+        const result = await client.compileAgentIntent(contractAddress, intent, sender);
         return res.json(result);
     } catch (e: any) {
         return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });

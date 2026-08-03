@@ -1,0 +1,10 @@
+{
+  "name": "ver-protocol-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Animated demo video for Ver Protocol",
+  "scripts": {
+    "build": "python3 scripts/build_ver_demo.py",
+    "voices": "echo 'Regenerate with edge-tts into public/'"
+  }
+}
