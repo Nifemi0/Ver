@@ -24,6 +24,7 @@ type Stmt = {
 type DbLike = {
   exec: (sql: string) => void;
   prepare: (sql: string) => Stmt;
+  close?: () => void;
 };
 
 /** Minimal in-memory stand-in when better-sqlite3 native binding is unavailable. */
@@ -31,6 +32,7 @@ class MemoryDb implements DbLike {
   private graphs = new Map<string, any>();
 
   exec(_sql: string) {}
+  close() { this.graphs.clear(); }
 
   prepare(sql: string): Stmt {
     const s = sql.replace(/\s+/g, " ").trim().toLowerCase();
@@ -63,6 +65,15 @@ class MemoryDb implements DbLike {
         },
       };
     }
+    if (s.startsWith("update protocol_graphs set expires_at")) {
+      return { get: () => undefined, run: (value: number) => { for (const row of this.graphs.values()) row.expires_at = value; } };
+    }
+    if (s.startsWith("update protocol_graphs set data")) {
+      return { get: () => undefined, run: (value: string) => { for (const row of this.graphs.values()) row.data = value; } };
+    }
+    if (s.startsWith("update protocol_graphs set schema_version")) {
+      return { get: () => undefined, run: (value: string) => { for (const row of this.graphs.values()) row.schema_version = value; } };
+    }
     if (s.startsWith("delete") && s.includes("from protocol_graphs") && s.includes("where contract_address")) {
       return {
         get: () => undefined,
@@ -86,6 +97,7 @@ class MemoryDb implements DbLike {
 }
 
 function openDatabase(dbPath: string): DbLike {
+  if (process.env.VER_CACHE_MEMORY === "true") return new MemoryDb();
   try {
     // Lazy require so a missing native binding doesn't crash module load.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -144,6 +156,10 @@ export class VerCache {
 
   public getMetrics(): CacheMetrics {
     return { ...this.metrics };
+  }
+
+  public close(): void {
+    this.db.close?.();
   }
 
   public get(contractAddress: string): VerSchema | null {

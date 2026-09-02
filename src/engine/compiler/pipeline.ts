@@ -24,6 +24,7 @@ import { IntegrityBuilder, IntegrityScorer } from "./integrity.scorer";
 import { GraphAssembler } from "./graph.assembler";
 import { VerSchema } from "../../types/schema";
 import crypto from "crypto";
+import { getActiveNetwork } from "../../chain/networks";
 
 
 export class CompilerPipeline {
@@ -106,7 +107,7 @@ export class CompilerPipeline {
             graphHash: graphHash,
             metadataURI: "",
             registryAddress: "0x0000000000000000000000000000000000000000",
-            deploymentNetwork: "Off-Chain Only"
+            deploymentNetwork: input.deploymentNetwork ?? (getActiveNetwork() === "botTestnet" ? "BOT Chain Testnet" : "X Layer Mainnet")
         };
         diagnostics.stage_times['RegistryLookup'] = performance.now() - registryStart;
 

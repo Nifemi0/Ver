@@ -62,6 +62,7 @@ describe('VerCache', () => {
   });
 
   afterEach(() => {
+    cache.close();
     if (fs.existsSync(path.join(TEST_DB_DIR, TEST_DB_NAME))) {
       fs.unlinkSync(path.join(TEST_DB_DIR, TEST_DB_NAME));
     }

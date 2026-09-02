@@ -5,9 +5,15 @@
  */
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv";
+import { getExplorerApiUrlForChain, getExplorerUrlForChain } from "../src/chain/networks";
 
-const ADDRESS = "0x3776Cc9AEe3AFb005F9465e6B78079FCf4d16DA6";
-const API = "https://xlayer.blockscout.com/api";
+dotenv.config();
+
+const ADDRESS = process.env.BOT_TESTNET_REGISTRY_ADDRESS ?? process.env.REGISTRY_ADDRESS;
+const CHAIN_ID = Number(process.env.VERIFY_CHAIN_ID ?? process.env.REGISTRY_CHAIN_ID ?? 968);
+if (!ADDRESS) throw new Error("Set BOT_TESTNET_REGISTRY_ADDRESS or REGISTRY_ADDRESS before verification.");
+const API = process.env.VERIFY_EXPLORER_API_URL ?? getExplorerApiUrlForChain(CHAIN_ID);
 const BUILD_INFO = path.join(
   __dirname,
   "../contracts/artifacts/build-info"
@@ -22,7 +28,9 @@ async function alreadyVerified(): Promise<boolean> {
   const res = await fetch(url);
   const data = await res.json();
   const r = Array.isArray(data.result) ? data.result[0] : data.result;
-  return Boolean(r?.SourceCode);
+  // A Blockscout source record is not enough: an address can have a stale or
+  // mismatched label. Only accept verification for VerRegistry itself.
+  return r?.ContractName === "VerRegistry" && Boolean(r?.SourceCode);
 }
 
 function loadStandardInput(): string {
@@ -90,9 +98,7 @@ async function verify() {
 
   if (data.status !== "1") {
     console.error("Verification submit failed. Manual URL:");
-    console.error(
-      `https://xlayer.blockscout.com/address/${ADDRESS}/contract-verification`
-    );
+    console.error(`${getExplorerUrlForChain(CHAIN_ID)}/address/${ADDRESS}/contract-verification`);
     process.exitCode = 1;
     return;
   }

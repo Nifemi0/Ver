@@ -91,8 +91,14 @@ contract VerRegistry {
 
     // solhint-disable-next-line ordering
     function authorizeAttester(address attester) external onlyOwner {
+        require(attester != address(0), "Zero address");
         authorizedAttesters[attester] = true;
         emit AttesterAuthorized(attester);
+    }
+
+    function revokeAttester(address attester) external onlyOwner {
+        authorizedAttesters[attester] = false;
+        emit AttesterRevoked(attester);
     }
 
     function transferOwnership(address newOwner) external onlyOwner {

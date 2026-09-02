@@ -171,7 +171,7 @@ server.tool(
 
 server.tool(
     "compile_agent_intent",
-    "Translates a natural language intent (e.g. 'Transfer 1.5 USDT to Alice') into verified, simulated, and safe calldata for X Layer contracts",
+    "Translates a natural language intent into verified, simulated, and safe calldata for BOT Chain contracts",
     {
         address: z.string().describe("The target contract address (0x...)"),
         intent: z.string().describe("The natural language description of the transaction intent (e.g. 'deposit 5 OKB', 'approve 20 USDC')"),

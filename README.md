@@ -2,7 +2,7 @@
 
 **Deterministic by design. Explainable by AI.**
 
-Ver is a semantic layer protocol. It compiles deterministic blockchain artifacts (ABIs, Bytecode, state variables) into an AI-readable Protocol Graph that IDEs, wallets, AI agents, and developer tools can consume natively via MCP.
+Ver is BOT Chain's deterministic semantic and wallet-safety layer. It compiles blockchain artifacts (ABIs, bytecode, state variables) into an AI-readable Protocol Graph that wallets, IDEs, AI agents, and developer tools can consume through HTTP or MCP.
 
 ---
 
@@ -33,7 +33,7 @@ Cursor / Claude / Onchain OS Agents
 ### 1. Compile a Protocol Graph
 
 ```bash
-curl -s "https://verprotocol.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c9021ce480b42188849D41d"
+curl -s "https://verprotocol.vercel.app/api/compile?chainId=968&address=0x922835859623d6F3b99a2742D585E093bBA0a740"
 ```
 
 ### 2. Compile an Intent to Calldata
@@ -42,14 +42,15 @@ curl -s "https://verprotocol.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c
 curl -X POST https://verprotocol.vercel.app/api/compile-intent \
   -H "Content-Type: application/json" \
   -d '{
-    "contractAddress": "0x1E4a5963aBFD975d8c9021ce480b42188849D41d",
-    "intent": "Transfer 10 USDT to 0x1111111111111111111111111111111111111111"
+    "chainId": 968,
+    "contractAddress": "0x922835859623d6F3b99a2742D585E093bBA0a740",
+    "intent": "Approve 1 PRWA to 0x1111111111111111111111111111111111111111"
   }'
 ```
 
 ### 3. Model Context Protocol (MCP)
 
-Provide AI tools with native understanding of X Layer smart contracts. Add Ver to your `claude_desktop_config.json`:
+Provide AI tools with native understanding of BOT Chain contracts. Add Ver to your `claude_desktop_config.json`:
 
 ```json
 {
@@ -58,7 +59,8 @@ Provide AI tools with native understanding of X Layer smart contracts. Add Ver t
       "command": "npx",
       "args": ["-y", "aic-mcp"],
       "env": {
-        "XLAYER_RPC_URL": "https://rpc.xlayer.tech"
+        "VER_NETWORK": "botTestnet",
+        "BOT_TESTNET_RPC_URL": "https://rpc.bohr.life"
       }
     }
   }
@@ -71,4 +73,4 @@ Provide AI tools with native understanding of X Layer smart contracts. Add Ver t
 - **Founder / Twitter**: [https://x.com/Love_Light_11](https://x.com/Love_Light_11)
 
 ---
-*© 2026 Ver Protocol. Built for X Layer.*
+*© 2026 Ver Protocol. Built for BOT Chain.*

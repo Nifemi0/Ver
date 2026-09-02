@@ -5,16 +5,14 @@ import { VerClient } from "../src/sdk/client";
 
 const client = new VerClient();
 
-// X Layer Mainnet verified contracts for the demo.
-// Warm these so live MCP / dashboard queries do not depend on a cold Blockscout round-trip on stage.
+// Verified BOT Chain contracts used by the wallet and registry demos.
 const TARGET_ADDRESSES: Record<string, string> = {
-  USDT: "0x1E4a5963aBFD975d8c9021ce480b42188849D41d",
-  USDC: "0x74b7f16337b8972027f6196a17a631ac6de26d22",
-  WETH: "0x5a77f1443d16ee5761d310e38b62f77f726bc71c",
+  PRWA: "0x922835859623d6F3b99a2742D585E093bBA0a740",
+  VER_REGISTRY_V2: "0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5",
 };
 
 async function seed() {
-  console.log("Seeding Ver Cache for X Layer Demo...");
+  console.log("Seeding Ver cache for BOT Chain...");
   console.log(`Contracts: ${Object.keys(TARGET_ADDRESSES).join(", ")}\n`);
 
   let ok = 0;

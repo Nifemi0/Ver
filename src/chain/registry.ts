@@ -1,5 +1,6 @@
-import { createPublicClient, createWalletClient, http, custom, Address } from 'viem';
+import { createPublicClient, createWalletClient, http, Address } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { getActiveChain, getActiveNetwork } from './networks';
 
 const REGISTRY_ABI = [
   {
@@ -28,27 +29,10 @@ const REGISTRY_ABI = [
   },
 ] as const;
 
-// VerRegistry default: X Layer Testnet (see deployments/testnet.json).
-// Mainnet pending redeploy. Override with REGISTRY_ADDRESS / REGISTRY_CHAIN_ID / REGISTRY_RPC_URL.
-const DEFAULT_REGISTRY_ADDRESS =
+const DEFAULT_BOT_REGISTRY_ADDRESS =
+  "0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5" as const;
+const LEGACY_XLAYER_REGISTRY_ADDRESS =
   "0x2061045fE42d789a12887D77EBAed26687a49c21" as const;
-
-const XLAYER_CHAIN = {
-  id: Number(process.env.REGISTRY_CHAIN_ID ?? 1952),
-  name: process.env.REGISTRY_CHAIN_NAME ?? "X Layer Testnet",
-  nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: [
-        process.env.REGISTRY_RPC_URL ??
-          process.env.XLAYER_TESTNET_RPC_URL ??
-          process.env.XLAYER_RPC_URL ??
-          process.env.RPC_URL ??
-          "https://testrpc.xlayer.tech",
-      ],
-    },
-  },
-} as const;
 
 export interface RegistryAttestation {
   graphHash: string;
@@ -60,16 +44,15 @@ export interface RegistryAttestation {
 
 function getPublicClient() {
   return createPublicClient({
-    chain: XLAYER_CHAIN,
+    chain: getActiveChain(),
     transport: http()
   });
 }
 
 function getRegistryAddress(): Address {
-  const addr =
-    process.env.REGISTRY_ADDRESS ||
-    process.env.NEXT_PUBLIC_REGISTRY_ADDRESS ||
-    DEFAULT_REGISTRY_ADDRESS;
+  const addr = getActiveNetwork() === "botTestnet"
+    ? (process.env.BOT_TESTNET_REGISTRY_ADDRESS || DEFAULT_BOT_REGISTRY_ADDRESS)
+    : (process.env.REGISTRY_ADDRESS || process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || LEGACY_XLAYER_REGISTRY_ADDRESS);
   return addr as Address;
 }
 
@@ -108,16 +91,20 @@ export async function lookupGraph(protocolAddress: string): Promise<RegistryAtte
 }
 
 export async function registerGraph(protocolAddress: string, graphHash: string, metadataURI: string): Promise<string | null> {
-  const pk = process.env.DEPLOYER_PRIVATE_KEY;
+  if (process.env.VER_ENABLE_WRITES !== "true") {
+      console.error("[Registry] Writes disabled; set VER_ENABLE_WRITES=true in the dedicated signer process");
+      return null;
+  }
+  const pk = process.env.ATTESTER_PRIVATE_KEY;
   if (!pk) {
-      console.error("[Registry] Missing DEPLOYER_PRIVATE_KEY in .env");
+      console.error("[Registry] Missing ATTESTER_PRIVATE_KEY in signer environment");
       return null;
   }
 
   const account = privateKeyToAccount(pk as `0x${string}`);
   const walletClient = createWalletClient({
     account,
-    chain: XLAYER_CHAIN,
+    chain: getActiveChain(),
     transport: http()
   });
   const publicClient = getPublicClient();

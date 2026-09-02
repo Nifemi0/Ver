@@ -1,4 +1,4 @@
-# XLayer Programmatic SDK Guide
+# BOT Chain Programmatic SDK Guide
 
 The `aic-mcp` package exports the `VerClient` class, allowing you to programmatically access all the compiler pipeline stages, semantic reasoning, transaction simulations, and decoding layers inside your Node.js/TypeScript applications.
 
@@ -14,8 +14,9 @@ npm install aic-mcp
 
 Make sure your environment variables are configured (e.g., in a `.env` file):
 ```bash
-# RPC URL for X Layer (Defaults to X Layer Mainnet)
-RPC_URL=https://rpc.xlayer.tech
+# BOT Chain is the default network
+VER_NETWORK=botTestnet
+BOT_TESTNET_RPC_URL=https://rpc.bohr.life
 
 # Optional: LLM configuration for Semantic Layer Enrichment
 OPENAI_API_KEY=your-api-key
@@ -31,10 +32,10 @@ Initialize the client and compile a protocol graph:
 import { VerClient } from "aic-mcp";
 
 // Initialize client
-const client = new VerClient();
+const client = new VerClient(undefined, 968);
 
 async function main() {
-  const address = "0x1E4a5963aBFD975d8c9021ce480b42188849D41d"; // Sample Contract
+  const address = "0x922835859623d6F3b99a2742D585E093bBA0a740"; // BOT Chain PRWA token
   
   // 1. Fetch and compile full protocol graph
   const graph = await client.getProtocolGraph(address);
@@ -130,7 +131,7 @@ Verify that an outgoing transaction does not trigger a privileged or dangerous r
 ```typescript
 import { VerClient } from "aic-mcp";
 
-const client = new VerClient();
+const client = new VerClient(undefined, 968);
 
 async function preSignCheck(targetContract: string, calldata: string) {
   try {
@@ -157,7 +158,7 @@ Gather structural permissions configuration across multiple contracts:
 ```typescript
 import { VerClient } from "aic-mcp";
 
-const client = new VerClient();
+const client = new VerClient(undefined, 968);
 
 async function inspectPermissions(contracts: string[]) {
   for (const address of contracts) {

@@ -16,12 +16,14 @@ type Stmt = {
 type DbLike = {
   exec: (sql: string) => void;
   prepare: (sql: string) => Stmt;
+  close?: () => void;
 };
 
 class MemoryDb implements DbLike {
   private rows = new Map<string, any>();
 
   exec(_sql: string) {}
+  close() { this.rows.clear(); }
 
   prepare(sql: string): Stmt {
     const s = sql.replace(/\s+/g, " ").trim().toLowerCase();
@@ -61,6 +63,7 @@ class MemoryDb implements DbLike {
 }
 
 function openDatabase(dbPath: string): DbLike {
+  if (process.env.VER_CACHE_MEMORY === "true") return new MemoryDb();
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Database = require("better-sqlite3");
@@ -102,6 +105,8 @@ export class SemanticCache {
       )
     `);
   }
+
+  public close(): void { this.db.close?.(); }
 
   public get(contractAddress: string, requiredPromptVersion: string): SemanticCacheData | null {
     const stmt = this.db.prepare(`

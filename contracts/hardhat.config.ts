@@ -1,7 +1,10 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
-dotenv.config({ path: "../.env" });
+import path from "path";
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config({ path: path.resolve(__dirname, ".env.deployer"), override: true });
 
 const accounts = process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [];
 
@@ -16,6 +19,11 @@ const config: HardhatUserConfig = {
     xlayerTestnet: {
       url:     process.env.XLAYER_TESTNET_RPC_URL ?? "https://testrpc.xlayer.tech",
       chainId: 1952,  // X Layer testnet (testrpc.xlayer.tech)
+      accounts,
+    },
+    botTestnet: {
+      url: process.env.BOT_TESTNET_RPC_URL ?? "https://rpc.bohr.life",
+      chainId: 968,
       accounts,
     },
   },

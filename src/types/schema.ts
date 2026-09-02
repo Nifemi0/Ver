@@ -90,7 +90,7 @@ export const RegistrySchema = z.object({
   graphHash: z.string(),
   metadataURI: z.string(),
   registryAddress: z.string(),
-  deploymentNetwork: z.literal("X Layer Mainnet"),
+  deploymentNetwork: z.enum(["X Layer Mainnet", "BOT Chain Testnet", "Off-Chain Only"]),
 }).optional();
 
 export const VerZodSchema = z.object({

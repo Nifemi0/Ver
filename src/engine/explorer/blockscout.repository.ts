@@ -202,8 +202,8 @@ export class BlockscoutRepository implements IExplorerRepository {
   private baseUrl: string;
   private limiter: Bottleneck;
 
-  constructor(baseUrl: string = "https://hsk.blockscout.com/api") {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl: string, private readonly allowDemoFallbacks = false) {
+    this.baseUrl = baseUrl.replace(/\/$/, "");
     
     // Bottleneck handles concurrency and rate limiting
     // Setting to max 5 requests per second to avoid hitting 429 limits
@@ -271,7 +271,7 @@ export class BlockscoutRepository implements IExplorerRepository {
 
   public async fetchContractAbi(address: string): Promise<string | null> {
     const addr = address.toLowerCase();
-    if (FALLBACKS[addr]) {
+    if (this.allowDemoFallbacks && FALLBACKS[addr]) {
       return FALLBACKS[addr].abi;
     }
 
@@ -288,13 +288,13 @@ export class BlockscoutRepository implements IExplorerRepository {
     }
 
     // Local Fallbacks for demo contracts
-    if (address.toLowerCase() === "0xb210d2120d57b758ee163cffb43e73728c471cf1".toLowerCase()) {
+    if (this.allowDemoFallbacks && address.toLowerCase() === "0xb210d2120d57b758ee163cffb43e73728c471cf1".toLowerCase()) {
       return '[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"}]';
     }
-    if (address.toLowerCase() === "0x4200000000000000000000000000000000000015".toLowerCase()) {
+    if (this.allowDemoFallbacks && address.toLowerCase() === "0x4200000000000000000000000000000000000015".toLowerCase()) {
       return '[{"inputs":[{"internalType":"address","name":"_admin","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"previousAdmin","type":"address"},{"indexed":false,"internalType":"address","name":"newAdmin","type":"address"}],"name":"AdminChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"implementation","type":"address"}],"name":"Upgraded","type":"event"},{"stateMutability":"payable","type":"fallback"},{"stateMutability":"payable","type":"receive"}]';
     }
-    if (address.toLowerCase() === "0x4200000000000000000000000000000000000016".toLowerCase()) {
+    if (this.allowDemoFallbacks && address.toLowerCase() === "0x4200000000000000000000000000000000000016".toLowerCase()) {
       return '[{"inputs":[],"name":"version","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}]';
     }
 
@@ -303,7 +303,7 @@ export class BlockscoutRepository implements IExplorerRepository {
 
   public async fetchContractSource(address: string): Promise<string | null> {
     const addr = address.toLowerCase();
-    if (FALLBACKS[addr]) {
+    if (this.allowDemoFallbacks && FALLBACKS[addr]) {
       return FALLBACKS[addr].source;
     }
 
@@ -320,7 +320,7 @@ export class BlockscoutRepository implements IExplorerRepository {
 
   public async resolveProxyImplementation(address: string): Promise<string | null> {
     const addr = address.toLowerCase();
-    if (FALLBACKS[addr]) {
+    if (this.allowDemoFallbacks && FALLBACKS[addr]) {
       return FALLBACKS[addr].implementation || null;
     }
 
@@ -342,7 +342,7 @@ export class BlockscoutRepository implements IExplorerRepository {
 
   public async fetchContractName(address: string): Promise<string | null> {
     const addr = address.toLowerCase();
-    if (FALLBACKS[addr]) {
+    if (this.allowDemoFallbacks && FALLBACKS[addr]) {
       return FALLBACKS[addr].name;
     }
 
@@ -360,7 +360,7 @@ export class BlockscoutRepository implements IExplorerRepository {
 
   public async fetchCompilerVersion(address: string): Promise<string | null> {
     const addr = address.toLowerCase();
-    if (FALLBACKS[addr]) {
+    if (this.allowDemoFallbacks && FALLBACKS[addr]) {
       return FALLBACKS[addr].compiler;
     }
 

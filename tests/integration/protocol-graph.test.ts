@@ -70,7 +70,7 @@ describe("Protocol Graph — integration", () => {
 
     it("registry block is present", () => {
       expect(graph.registry).toBeDefined();
-      expect(graph.registry!.deploymentNetwork).toBe("X Layer Mainnet");
+      expect(graph.registry!.deploymentNetwork).toBe("BOT Chain Testnet");
     });
   });
 

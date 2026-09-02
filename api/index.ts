@@ -5,9 +5,12 @@ import fs from "fs";
 import { isAddress } from "viem";
 import { VerClient } from "../src/sdk/client";
 import { MermaidExporter } from "../src/engine/export/mermaid";
+import { getChainById } from "../src/chain/networks";
+import { z } from "zod";
 
 const app = express();
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "").split(",").map(x => x.trim()).filter(Boolean);
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
 
 // Security size limits
 app.use(express.json({ limit: "1mb" }));
@@ -17,7 +20,7 @@ app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use((req, res, next) => {
     res.setHeader(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';"
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://rpc.bohr.life https://scan.bohr.life https://web3.okx.com; frame-ancestors 'none';"
     );
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
@@ -36,7 +39,26 @@ app.get("/swagger.json", (req, res) => {
     }
 });
 
-const client = new VerClient();
+const clients = new Map<number, VerClient>();
+const WalletPrepareSchema = z.object({
+    chainId: z.union([z.literal(196), z.literal(968)]),
+    contractAddress: z.string().refine(isAddress, "Invalid contractAddress"),
+    intent: z.string().trim().min(1).max(1000),
+    sender: z.string().refine(isAddress, "Invalid sender"),
+    value: z.string().regex(/^\d+$/, "value must be a base-10 wei integer").optional(),
+}).strict();
+function getClient(req: express.Request): VerClient {
+    const rawChainId = req.query.chainId ?? req.body?.chainId ?? req.body?.arguments?.chainId ?? req.body?.params?.chainId;
+    const chainId = rawChainId === undefined ? 968 : Number(rawChainId);
+    if (!Number.isInteger(chainId)) throw new Error("chainId must be an integer");
+    getChainById(chainId);
+    let client = clients.get(chainId);
+    if (!client) {
+        client = new VerClient(undefined, chainId);
+        clients.set(chainId, client);
+    }
+    return client;
+}
 
 // Health check (static + API)
 app.get(["/health", "/api/health"], (_req, res) => {
@@ -44,7 +66,8 @@ app.get(["/health", "/api/health"], (_req, res) => {
         ok: true,
         service: "ver-protocol",
         package: "aic-mcp",
-        chainId: 196,
+        primaryChainId: 968,
+        supportedChains: [968, 196],
         time: new Date().toISOString(),
     });
 });
@@ -85,7 +108,13 @@ const x402Middleware = (req: express.Request, res: express.Response, next: expre
         return next();
     }
     
-    // Unpaid request -> return 402 challenge
+    const asset = process.env.X402_ASSET_ADDRESS;
+    const payTo = process.env.X402_PAY_TO;
+    if (!asset || !payTo || !isAddress(asset) || !isAddress(payTo)) {
+        return res.status(503).json({ error: "BOT Chain payment configuration is unavailable" });
+    }
+
+    // Unpaid request -> return a BOT Chain 402 challenge
     const challenge = {
         x402Version: 2,
         resource: {
@@ -96,10 +125,10 @@ const x402Middleware = (req: express.Request, res: express.Response, next: expre
         accepts: [
             {
                 scheme: "exact",
-                network: "eip155:196",
-                asset: "0x779ded0c9e1022225f8e0630b35a9b54be713736",
+                network: "eip155:968",
+                asset,
                 amount: "10000",
-                payTo: "0xb5b537d10b671d8f4f25b7f78aa12871cbdc2424",
+                payTo,
                 maxTimeoutSeconds: 300,
                 extra: { name: "USD₮0", version: "1" }
             }
@@ -118,10 +147,9 @@ const handler = async (req: express.Request, res: express.Response) => {
     try {
         let address = (req.query.address || req.body?.address || req.body?.arguments?.address || req.body?.params?.address) as string;
         if (!address || !isAddress(address)) {
-            // Default fallback address for automated pings / health checks (USDT0 on X Layer)
-            address = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
+            return res.status(400).json({ error: "A valid contract address is required" });
         }
-        const graph = await client.getProtocolGraph(address);
+        const graph = await getClient(req).getProtocolGraph(address);
         const mermaid = MermaidExporter.generate(graph);
         
         const trace = [
@@ -160,16 +188,29 @@ app.post("/api/compile-intent", rateLimiter, async (req, res) => {
         let intent = (req.body?.intent || req.body?.arguments?.intent || req.body?.params?.intent || req.query.intent) as string;
         let sender = (req.body?.sender || req.body?.arguments?.sender || req.body?.params?.sender || req.query.sender) as string | undefined;
         if (!contractAddress || !isAddress(contractAddress)) {
-            contractAddress = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
+            return res.status(400).json({ error: "A valid contractAddress is required" });
         }
         if (!intent || typeof intent !== "string") {
-            intent = "Transfer 100 USDT to recipient";
+            return res.status(400).json({ error: "A non-empty intent is required" });
         }
         
-        const result = await client.compileAgentIntent(contractAddress, intent, sender);
+        const result = await getClient(req).compileAgentIntent(contractAddress, intent, sender);
         return res.json(result);
     } catch (e: any) {
         return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });
+    }
+});
+
+app.post("/api/wallet/prepare", rateLimiter, async (req, res) => {
+    const parsed = WalletPrepareSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Invalid wallet request", details: parsed.error.flatten() });
+    try {
+        const { chainId, contractAddress, intent, sender, value } = parsed.data;
+        const result = await getClient({ ...req, body: { chainId } } as express.Request)
+            .compileAgentIntent(contractAddress, intent, sender, value);
+        return res.status(result.signable ? 200 : 422).json(result);
+    } catch (e: any) {
+        return res.status(422).json({ error: e.message || "Wallet preparation failed" });
     }
 });
 
@@ -181,13 +222,13 @@ app.get("/api/compile-intent", rateLimiter, async (req, res) => {
         let sender = req.query.sender as string | undefined;
         
         if (!contractAddress || !isAddress(contractAddress)) {
-            contractAddress = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
+            return res.status(400).json({ error: "A valid contractAddress is required" });
         }
         if (!intent || typeof intent !== "string") {
-            intent = "Transfer 100 USDT to recipient";
+            return res.status(400).json({ error: "A non-empty intent is required" });
         }
         
-        const result = await client.compileAgentIntent(contractAddress, intent, sender);
+        const result = await getClient(req).compileAgentIntent(contractAddress, intent, sender);
         return res.json(result);
     } catch (e: any) {
         return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });

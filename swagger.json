@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Ver Protocol Compiler API",
-    "description": "Deterministic Protocol Intelligence compiler for AI. Compiles X Layer smart contracts into Protocol Graphs and maps natural-language intent to ABI-verified EVM calldata.",
+    "description": "Deterministic BOT Chain protocol compiler and wallet-safety API. Compiles smart contracts into Protocol Graphs and maps natural-language intent to ABI-verified, simulated EVM calldata.",
     "version": "1.0.5",
     "contact": { "name": "Ver Protocol", "url": "https://verprotocol.vercel.app" }
   },
@@ -31,7 +31,7 @@
             "in": "query",
             "required": false,
             "schema": { "type": "string" },
-            "description": "Contract address (0x...). Defaults to a known X Layer token if omitted."
+            "description": "Required BOT Chain contract address (0x...)."
           }
         ],
         "responses": {
@@ -93,6 +93,33 @@
           },
           "429": { "description": "Rate limited" },
           "500": { "description": "Intent compile error" }
+        }
+      }
+    },
+    "/api/wallet/prepare": {
+      "post": {
+        "summary": "Prepare and simulate an unsigned wallet transaction",
+        "operationId": "prepareWalletTransaction",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["chainId", "contractAddress", "intent", "sender"],
+            "properties": {
+              "chainId": { "type": "integer", "enum": [968, 196], "description": "BOT Chain is primary; 196 is compatibility-only." },
+              "contractAddress": { "type": "string" },
+              "intent": { "type": "string", "minLength": 1, "maxLength": 1000 },
+              "sender": { "type": "string" },
+              "value": { "type": "string", "pattern": "^[0-9]+$" }
+            }
+          } } }
+        },
+        "responses": {
+          "200": { "description": "Simulation succeeded; unsigned transaction is signable after user confirmation" },
+          "400": { "description": "Invalid request" },
+          "422": { "description": "ABI, bytecode, amount, or simulation blocked preparation" },
+          "429": { "description": "Rate limited" }
         }
       }
     }

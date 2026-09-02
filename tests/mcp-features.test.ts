@@ -39,8 +39,19 @@ describe("VerClient New MCP Features", () => {
       }))
     };
     
-    const client = new VerClient(mockLlm);
-    const USDT = "0x1E4a5963aBFD975d8c9021ce480b42188849D41d";
+    const abi = JSON.stringify([
+      { type: "function", name: "decimals", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
+      { type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ name: "recipient", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] }
+    ]);
+    const mockRepo = {
+      fetchContractAbi: vi.fn().mockResolvedValue(abi),
+      fetchContractSource: vi.fn().mockResolvedValue("contract TestToken {}"),
+      resolveProxyImplementation: vi.fn().mockResolvedValue(null),
+      fetchContractName: vi.fn().mockResolvedValue("TestToken"),
+      fetchCompilerVersion: vi.fn().mockResolvedValue("0.8.20")
+    };
+    const client = new VerClient(mockLlm, 968, mockRepo);
+    const USDT = "0x922835859623d6F3b99a2742D585E093bBA0a740";
     const result = await client.compileAgentIntent(
       USDT,
       "Transfer 1.5 USDT to Alice"

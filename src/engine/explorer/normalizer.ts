@@ -1,5 +1,6 @@
 import { IExplorerRepository } from "./repository.interface";
 import { createPublicClient, http, Address, parseAbi } from "viem";
+import { getActiveChain } from "../../chain/networks";
 
 export interface NormalizedContractData {
   address: string;
@@ -11,21 +12,14 @@ export interface NormalizedContractData {
   compilerVersion?: string;
 }
 
-// Proxy slot reads must hit the same chain as X Layer Mainnet.
-const XLAYER_CHAIN = {
-  id: 196,
-  name: "X Layer Mainnet",
-  nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
-  rpcUrls: { default: { http: [process.env.XLAYER_RPC_URL ?? process.env.RPC_URL ?? "https://rpc.xlayer.tech"] } },
-} as const;
-
 export class DataNormalizer {
   private repository: IExplorerRepository;
-  private client = createPublicClient({ chain: XLAYER_CHAIN, transport: http() });
+  private client = createPublicClient({ chain: getActiveChain(), transport: http() });
 
   // Dependency Inversion: Compiler doesn't know about Blockscout
-  constructor(repository: IExplorerRepository) {
+  constructor(repository: IExplorerRepository, chain = getActiveChain()) {
     this.repository = repository;
+    this.client = createPublicClient({ chain, transport: http() });
   }
 
   /**
@@ -92,6 +86,28 @@ export class DataNormalizer {
             }
         } catch (e) {
             // Ignore bytecode read failures
+        }
+    }
+
+    // 1.7 Resolve implementation-authority proxies (used by ERC-3643/TREX).
+    if (!isProxy) {
+        try {
+            const authority = await this.client.readContract({
+                address: address as Address,
+                abi: parseAbi(["function getImplementationAuthority() view returns (address)"]),
+                functionName: "getImplementationAuthority"
+            });
+            const implementation = await this.client.readContract({
+                address: authority as Address,
+                abi: parseAbi(["function getTokenImplementation() view returns (address)"]),
+                functionName: "getTokenImplementation"
+            });
+            if (implementation && implementation !== "0x0000000000000000000000000000000000000000") {
+                isProxy = true;
+                implementationAddress = implementation as string;
+            }
+        } catch {
+            // Not an implementation-authority token proxy.
         }
     }
 

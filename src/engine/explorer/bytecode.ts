@@ -1,14 +1,8 @@
 import { createPublicClient, http, Address } from 'viem';
-
-const XLAYER_MAINNET = {
-  id: 196,
-  name: "X Layer Mainnet",
-  nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
-  rpcUrls: { default: { http: [process.env.XLAYER_RPC_URL ?? process.env.RPC_URL ?? "https://rpc.xlayer.tech"] } },
-} as const;
+import { getActiveChain } from '../../chain/networks';
 
 export class BytecodeDecompiler {
-    private client = createPublicClient({ chain: XLAYER_MAINNET, transport: http() });
+    private client = createPublicClient({ chain: getActiveChain(), transport: http() });
 
     public async generatePseudoAbi(address: string): Promise<string | null> {
         const bytecode = await this.client.getBytecode({ address: address as Address });

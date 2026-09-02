@@ -44,6 +44,7 @@
     "node": "22.x"
   },
   "keywords": [
+    "bot-chain",
     "xlayer",
     "blockchain",
     "smart-contracts",
@@ -81,9 +82,14 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.0",
     "@types/semver": "^7.7.1",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "esbuild": "0.28.2"
   }
 }

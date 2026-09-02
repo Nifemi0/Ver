@@ -70,7 +70,7 @@
             border-radius: 2px;
         }
     </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.xlayer.tech https://testrpc.xlayer.tech https://xlayerrpc.okx.com https://web3.okx.com https://registry.npmjs.org;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.bohr.life https://scan.bohr.life https://registry.npmjs.org;">
     </head>
 <body class="antialiased min-h-screen flex flex-col justify-between selection:bg-copper-500 selection:text-white">
 <a href="#main-content" class="sr-only focus:not-sr-only">Skip to content</a>
@@ -80,7 +80,7 @@
     <a href="index.html" class="flex items-center gap-2.5 group">
         <span class="material-symbols-outlined text-copper-500 text-2xl font-light transition-transform group-hover:rotate-45 duration-300">terminal</span>
         <span class="font-serif font-bold text-xl tracking-tight text-white">Ver</span>
-        <span class="text-[9px] font-mono bg-white/5 text-slate-300 px-2 py-0.5 rounded border border-white/5">X Layer</span>
+        <span class="text-[9px] font-mono bg-white/5 text-slate-300 px-2 py-0.5 rounded border border-white/5">BOT Chain</span>
     </a>
     
     <div class="flex items-center gap-6 text-xs font-mono text-slate-300">
@@ -133,11 +133,11 @@
                         <span class="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
                         <span class="text-xs font-mono text-slate-450 ml-1.5">Interactive Schema Compiler</span>
                     </div>
-                    <span class="text-[10px] font-mono text-copper-500 bg-copper-900/20 px-2 py-0.5 border border-copper-500/10 rounded">X Layer Mainnet</span>
+                    <span class="text-[10px] font-mono text-copper-500 bg-copper-900/20 px-2 py-0.5 border border-copper-500/10 rounded">BOT Chain Testnet · 968</span>
                 </div>
                 
                 <div class="flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="contractAddress" placeholder="Paste X Layer Contract Address (0x...)" class="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-white outline-none focus:border-copper-500/50 transition-colors" value="0x1E4a5963aBFD975d8c9021ce480b42188849D41d" />
+                    <input type="text" id="contractAddress" placeholder="Paste BOT Chain Contract Address (0x...)" class="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-white outline-none focus:border-copper-500/50 transition-colors" value="0x922835859623d6F3b99a2742D585E093bBA0a740" />
                     <button onclick="compileContract()" class="group relative bg-copper-500 hover:bg-copper-400 text-white font-medium text-xs rounded-xl px-6 py-2.5 transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden shadow-[0_0_20px_rgba(200,122,83,0.3)] hover:shadow-[0_0_30px_rgba(200,122,83,0.5)]">
                         <span class="relative z-10 flex items-center gap-2">Compile Graph <span class="material-symbols-outlined text-sm font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span></span>
                         <div class="absolute inset-0 bg-gradient-to-r from-copper-400 to-copper-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -146,9 +146,8 @@
                 
                 <div class="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-300">
                     <span>Try:</span>
-                    <button onclick="setAddress('0x1E4a5963aBFD975d8c9021ce480b42188849D41d')" class="hover:text-white transition-colors underline decoration-slate-700">USDT (Mainnet)</button>
-                    <button onclick="setAddress('0x74b7f16337b8972027f6196a17a631ac6de26d22')" class="hover:text-white transition-colors underline decoration-slate-700">USDC (Mainnet)</button>
-                    <button onclick="setAddress('0x5a77f1443d16ee5761d310e38b62f77f726bc71c')" class="hover:text-white transition-colors underline decoration-slate-700">WETH (Mainnet)</button>
+                    <button onclick="setAddress('0x922835859623d6F3b99a2742D585E093bBA0a740')" class="hover:text-white transition-colors underline decoration-slate-700">PRWA Token</button>
+                    <button onclick="setAddress('0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5')" class="hover:text-white transition-colors underline decoration-slate-700">Ver Registry v2</button>
                 </div>
                 
                 <div class="bg-black/70 rounded-xl p-4 border border-white/5 font-mono text-xs text-slate-300 min-h-[250px] max-h-[350px] overflow-y-auto leading-relaxed">
@@ -184,7 +183,7 @@
                 <span class="text-[10px] font-mono text-slate-300 uppercase tracking-widest block mb-4">Pillar 02</span>
                 <h3 class="font-serif text-lg text-white mb-2">Simulation-Driven Intents</h3>
                 <p class="text-slate-400 text-xs leading-relaxed">
-                    Features the Agentic Intent Compiler (AIC) to translate natural language transaction intents into structured payloads. Includes automatic decimal resolution and `eth_call` dry-runs on X Layer to verify safety before execution.
+                    Translates natural-language wallet intents into exact payloads, resolves token decimals, and performs BOT Chain `eth_call` dry-runs before anything becomes signable.
                 </p>
             </div>
 
@@ -217,7 +216,8 @@
       <span class="text-emerald-400">"aic-mcp"</span>
     ],
     <span class="text-purple-400">"env"</span>: {
-      <span class="text-purple-400">"XLAYER_RPC_URL"</span>: <span class="text-emerald-400">"https://rpc.xlayer.tech"</span>
+      <span class="text-purple-400">"VER_NETWORK"</span>: <span class="text-emerald-400">"botTestnet"</span>,
+      <span class="text-purple-400">"BOT_TESTNET_RPC_URL"</span>: <span class="text-emerald-400">"https://rpc.bohr.life"</span>
     }
   }
 }</pre>
@@ -233,7 +233,7 @@
             <span class="font-serif font-bold text-sm text-white">Ver Protocol</span>
         </div>
         <div>
-            © 2026 Ver Protocol. Deployed on X Layer.
+            © 2026 Ver Protocol. Built for BOT Chain.
         </div>
         <div class="flex gap-4">
             <a href="/docs" class="hover:text-copper-400 transition-colors">Docs</a>
@@ -244,7 +244,7 @@
 </footer>
 
 <script>
-    const XLAYER_RPC = 'https://rpc.xlayer.tech';
+    const BOT_CHAIN_RPC = 'https://rpc.bohr.life';
 
     let compiling = false;
 
@@ -291,7 +291,7 @@
         return { hasCode: !!(code && code !== '0x'), codeLen: code.length };
     }
     async function ethGetCode(address) {
-        return ethGetCodeOn(XLAYER_RPC, address);
+        return ethGetCodeOn(BOT_CHAIN_RPC, address);
     }
 
     async function compileContract() {
@@ -306,13 +306,13 @@
         setCompileBusy(true);
         logsDiv.innerHTML = '';
         appendLog('> [Compiler] Starting for ' + address, 'text-slate-200');
-        appendLog('> [Compiler] Checking bytecode on X Layer (chainId 196)…', 'text-slate-300');
+        appendLog('> [Compiler] Checking bytecode on BOT Chain (chainId 968)…', 'text-slate-300');
 
         try {
             const codeInfo = await ethGetCode(address);
             if (!codeInfo.hasCode) {
-                appendLog('> [Compiler] No contract bytecode at this address on X Layer.', 'text-amber-400');
-                appendLog('> Tip: use a real X Layer contract (e.g. USDT sample) or deploy first.', 'text-slate-300');
+                appendLog('> [Compiler] No contract bytecode at this address on BOT Chain.', 'text-amber-400');
+                appendLog('> Tip: use a verified BOT Chain contract or deploy first.', 'text-slate-300');
                 return;
             }
             appendLog('> [Compiler] Bytecode found (len ' + codeInfo.codeLen + ').', 'text-emerald-400');
@@ -320,11 +320,8 @@
 
 
             appendLog('> [Compiler] Calling /api/compile…', 'text-slate-300');
-            const response = await fetch('/api/compile?address=' + encodeURIComponent(address), {
-                headers: { 
-                    'accept': 'application/json',
-                    'x-payment': 'demo-frontend-bypass'
-                }
+            const response = await fetch('/api/compile?chainId=968&address=' + encodeURIComponent(address), {
+                headers: { 'accept': 'application/json' }
             });
             let data = null;
             try { data = await response.json(); } catch (_) { data = null; }
@@ -343,7 +340,7 @@
                     ok: false,
                     mode: 'onchain_probe_only',
                     contract_address: address,
-                    chainId: 196,
+                    chainId: 968,
                     has_bytecode: true,
                     code_len: codeInfo.codeLen,
 

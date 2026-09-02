@@ -10,6 +10,7 @@ export interface CompilerInput {
         protocolName: string;
         compilerVersion: string;
     };
+    deploymentNetwork?: "X Layer Mainnet" | "BOT Chain Testnet" | "Off-Chain Only";
     depth: number;
     maxDepth: number;
     visited: Set<string>;

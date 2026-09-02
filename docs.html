@@ -115,7 +115,7 @@
             border-radius: 0;
         }
     </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.xlayer.tech;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.bohr.life https://scan.bohr.life;">
     </head>
 <body class="antialiased min-h-screen flex flex-col justify-between selection:bg-copper-500 selection:text-white">
 <a href="#main-content" class="sr-only focus:not-sr-only">Skip to content</a>
@@ -124,7 +124,7 @@
     <a href="/" class="flex items-center gap-2.5 group">
         <span class="material-symbols-outlined text-copper-500 text-2xl font-light transition-transform group-hover:rotate-45 duration-300">terminal</span>
         <span class="font-serif font-bold text-xl tracking-tight text-white">Ver</span>
-        <span class="text-[9px] font-mono bg-white/5 text-slate-300 px-2 py-0.5 rounded border border-white/5">X Layer</span>
+        <span class="text-[9px] font-mono bg-white/5 text-slate-300 px-2 py-0.5 rounded border border-white/5">BOT Chain</span>
     </a>
     
     <div class="flex items-center gap-6 text-xs font-mono text-slate-300">
@@ -174,7 +174,7 @@
         <section id="introduction">
             <h2>Introduction</h2>
             <p>
-                <strong>Ver</strong> is a deterministic, AI-readable semantic layer built specifically for X Layer. It exposes smart contract ABIs, unflattened bytecode, and verified contract structure to AI agents, stripping away heuristics and replacing them with cryptographically attestable schemas.
+                <strong>Ver</strong> is BOT Chain's deterministic semantic and wallet-safety layer. It exposes verified contract structure to wallets and AI systems while replacing guessed transaction data with simulation-gated calldata.
             </p>
             <p>
                 Protocol Graphs give agents consistent, machine-readable structure instead of raw ABIs.
@@ -195,9 +195,9 @@
                 <li><code>security</code>: Privilege modifiers, ownership functions, and safety guardrails.</li>
             </ul>
             <p>
-                You can generate a Protocol Graph by passing an X Layer address to our public compilation endpoint:
+                Generate a Protocol Graph by passing a BOT Chain address and chain ID to the compilation endpoint:
             </p>
-            <pre><code>curl -s "https://verprotocol.vercel.app/api/compile?address=0x1E4a5963aBFD975d8c9021ce480b42188849D41d"</code></pre>
+            <pre><code>curl -s "https://verprotocol.vercel.app/api/compile?chainId=968&amp;address=0x922835859623d6F3b99a2742D585E093bBA0a740"</code></pre>
         </section>
 
         <section id="aic">
@@ -206,31 +206,32 @@
                 The <strong>Agentic Intent Compiler</strong> (AIC) is a middleware service that maps natural language intents directly to deterministic EVM calldata.
             </p>
             <p>
-                Unlike standard AI models which hallucinate parameters, the AIC statically simulates the generated calldata against the live X Layer mainnet using an <code>eth_call</code> dry-run. If a structural mapping failure occurs, it securely forwards the context to an LLM fallback path to resolve complex state changes.
+                AIC resolves a verified BOT Chain ABI, encodes exact integer values, and simulates the transaction with <code>eth_call</code>. Reverted or unverified transactions are returned as non-signable.
             </p>
             <h3>Usage Endpoint</h3>
-            <pre><code>POST https://verprotocol.vercel.app/api/compile-intent
+            <pre><code>POST https://verprotocol.vercel.app/api/wallet/prepare
 
 {
-  "contractAddress": "0x1E4a5963aBFD975d8c9021ce480b42188849D41d",
-  "intent": "Transfer 10 USDT to 0x1111111111111111111111111111111111111111"
+  "chainId": 968,
+  "contractAddress": "0x922835859623d6F3b99a2742D585E093bBA0a740",
+  "sender": "0x1111111111111111111111111111111111111111",
+  "intent": "Approve 1 PRWA to 0x2222222222222222222222222222222222222222"
 }</code></pre>
             <p>
                 The endpoint returns the EVM calldata alongside the simulation status:
             </p>
             <pre><code>{
-  "success": true,
-  "functionName": "transfer",
-  "args": ["0x1111...", "10000000"],
-  "encodedCalldata": "0xa905...",
-  "simulationStatus": "reverted"
+  "signable": true,
+  "simulationStatus": "success",
+  "risk": "review",
+  "transaction": { "chainId": 968, "to": "0x9228...", "data": "0x095e...", "value": "0" }
 }</code></pre>
         </section>
 
         <section id="mcp-setup">
             <h2>Model Context Protocol (MCP)</h2>
             <p>
-                Ver includes a native <a href="https://modelcontextprotocol.io/" target="_blank">Model Context Protocol</a> server, allowing you to inject deterministic X Layer protocol graphs directly into AI environments like Claude Desktop, Cursor IDE, or custom agent runtimes.
+                Ver includes a native <a href="https://modelcontextprotocol.io/" target="_blank">Model Context Protocol</a> server for BOT Chain protocol graphs in Claude Desktop, Cursor, or custom agent runtimes.
             </p>
             <h3>Installation</h3>
             <p>Run the MCP server locally without prior installation using <code>npx</code>:</p>
@@ -244,13 +245,14 @@
       "command": "npx",
       "args": ["-y", "aic-mcp"],
       "env": {
-        "XLAYER_RPC_URL": "https://rpc.xlayer.tech"
+        "VER_NETWORK": "botTestnet",
+        "BOT_TESTNET_RPC_URL": "https://rpc.bohr.life"
       }
     }
   }
 }</code></pre>
             <p>
-                Once configured, Claude will have access to the <code>get_protocol_graph</code> and <code>compile_agent_intent</code> tools natively in chat, allowing it to read and interact with X Layer contracts autonomously.
+                Once configured, the client can call <code>get_protocol_graph</code> and <code>compile_agent_intent</code> against BOT Chain contracts.
             </p>
         </section>
     </article>
@@ -263,7 +265,7 @@
             <span class="font-serif font-bold text-sm text-white">Ver Protocol</span>
         </div>
         <div>
-            © 2026 Ver Protocol. Deployed on X Layer.
+            © 2026 Ver Protocol. Built for BOT Chain.
         </div>
         <div class="flex gap-4">
             <a href="/docs" class="text-white transition-colors">Docs</a>

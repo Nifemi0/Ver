@@ -1,36 +1,39 @@
 import { VerCache } from "../engine/cache";
 import { SemanticCache } from "../engine/enrichment/semantic.cache";
 import { BlockscoutRepository } from "../engine/explorer/blockscout.repository";
+import { XLayerExplorerRepository } from "../engine/explorer/xlayer.repository";
+import { IExplorerRepository } from "../engine/explorer/repository.interface";
 import { DataNormalizer } from "../engine/explorer/normalizer";
 import { CompilerPipeline } from "../engine/compiler/pipeline";
 import { SemanticEnricher, ILLMProvider } from "../engine/enrichment/enricher";
 import { VerSchema } from "../types/schema";
-import { decodeFunctionData, encodeFunctionData, createPublicClient, http, Address, parseAbi } from "viem";
+import { decodeFunctionData, encodeFunctionData, createPublicClient, http, Address, parseAbi, parseUnits } from "viem";
 import { GenericLLMProvider } from "../engine/enrichment/llm.provider";
+import { getChainById, getExplorerApiUrlForChain, getExplorerUrlForChain } from "../chain/networks";
 
 // Chain parameters matching blockscout
-const XLAYER_CHAIN = {
-  id: 196,
-  name: "X Layer Mainnet",
-  nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
-  rpcUrls: { default: { http: [process.env.XLAYER_RPC_URL ?? process.env.RPC_URL ?? "https://rpc.xlayer.tech"] } },
-} as const;
-
 export class VerClient {
   private cache: VerCache;
   private semanticCache: SemanticCache;
-  private repo: BlockscoutRepository;
+  private repo: IExplorerRepository;
   private normalizer: DataNormalizer;
   private compiler: CompilerPipeline;
   private enricher: SemanticEnricher;
-  private client = createPublicClient({ chain: XLAYER_CHAIN, transport: http() });
+  private client;
   private llmProvider: ILLMProvider;
+  private readonly chain;
+  private readonly cacheKeyPrefix: string;
 
-  constructor(llmProvider?: ILLMProvider) {
+  constructor(llmProvider?: ILLMProvider, chainId?: number, explorerRepository?: IExplorerRepository) {
+    this.chain = getChainById(chainId);
+    this.cacheKeyPrefix = `${this.chain.id}:`;
+    this.client = createPublicClient({ chain: this.chain, transport: http() });
     this.cache = new VerCache();
     this.semanticCache = new SemanticCache();
-    this.repo = new BlockscoutRepository();
-    this.normalizer = new DataNormalizer(this.repo);
+    this.repo = explorerRepository ?? (this.chain.id === 196
+      ? new XLayerExplorerRepository()
+      : new BlockscoutRepository(getExplorerApiUrlForChain(this.chain.id), false));
+    this.normalizer = new DataNormalizer(this.repo, this.chain);
     this.compiler = new CompilerPipeline();
     const provider = llmProvider || new GenericLLMProvider();
     this.llmProvider = provider;
@@ -38,7 +41,8 @@ export class VerClient {
   }
 
   public async getProtocolGraph(address: string, forceRefresh = false): Promise<VerSchema> {
-    let graph = this.cache.get(address);
+    const cacheKey = `${this.cacheKeyPrefix}${address.toLowerCase()}`;
+    let graph = this.cache.get(cacheKey);
 
     if (!graph || forceRefresh) {
         const normalized = await this.normalizer.normalize(address);
@@ -52,17 +56,18 @@ export class VerClient {
                 protocolName: normalized.contractName || "Unknown",
                 compilerVersion: normalized.compilerVersion || "Unknown"
             },
+            deploymentNetwork: this.chain.id === 968 ? "BOT Chain Testnet" : "X Layer Mainnet",
             depth: 0,
             maxDepth: 1,
             visited: new Set()
         };
         const { graph: compiledGraph } = await this.compiler.compile(input);
         graph = compiledGraph;
-        this.cache.set(address, graph);
+        this.cache.set(cacheKey, graph);
     }
 
     const promptVersion = this.enricher.promptVersion;
-    const cachedSemantic = this.semanticCache.get(address, promptVersion);
+    const cachedSemantic = this.semanticCache.get(cacheKey, promptVersion);
 
     if (cachedSemantic) {
         graph.semantic = cachedSemantic.semantic;
@@ -73,7 +78,7 @@ export class VerClient {
         const { graph: enrichedGraph, diagnostics } = await this.enricher.enrich(graph);
         graph = enrichedGraph;
         if (diagnostics.status === "COMPLETE") {
-            this.semanticCache.set(address, promptVersion, {
+            this.semanticCache.set(cacheKey, promptVersion, {
                 semantic: graph.semantic,
                 security: graph.security,
                 developer: graph.developer
@@ -128,13 +133,13 @@ export class VerClient {
 
   public async simulateTransaction(to: string, data: string, from?: string, value?: string): Promise<any> {
       const { TransactionSimulator } = await import("../engine/simulator.js");
-      const simulator = new TransactionSimulator();
+      const simulator = new TransactionSimulator(this.chain);
       return await simulator.simulate(to, data, from, value);
   }
 
   public async readContract(address: string, data: string): Promise<any> {
       const { TransactionSimulator } = await import("../engine/simulator.js");
-      const simulator = new TransactionSimulator();
+      const simulator = new TransactionSimulator(this.chain);
       return await simulator.read(address, data);
   }
 
@@ -411,8 +416,13 @@ export class VerClient {
       sender?: string,
       value?: string
   ): Promise<any> {
-      const abiRaw = await this.repo.fetchContractAbi(address);
-      if (!abiRaw) throw new Error("No ABI found for intent compiling");
+      const bytecode = await this.client.getBytecode({ address: address as Address });
+      if (!bytecode || bytecode === "0x") throw new Error(`No contract bytecode at ${address} on chain ${this.chain.id}`);
+      const normalized = await this.normalizer.normalize(address);
+      const abiRaw = normalized.abi;
+      if (!abiRaw || normalized.sourceCode?.includes("Pseudo-ABI generated")) {
+        throw new Error("A verified ABI is required for wallet transaction preparation");
+      }
       const abi = JSON.parse(abiRaw);
 
       // Filter to write functions (non-view/pure functions)
@@ -427,7 +437,7 @@ export class VerClient {
           return `- ${f.name}(${inputs})`;
       }).join("\n");
 
-      const systemPrompt = `You are the Agentic Intent Compiler (AIC) for X Layer.
+      const systemPrompt = `You are the Agentic Intent Compiler (AIC) for ${this.chain.name}.
 Your task is to parse a natural language transaction intent and map it to a specific write function from the contract's ABI.
 
 Available write functions:
@@ -474,19 +484,16 @@ Return ONLY valid JSON. No markdown, no explanations.`;
       }
 
       // Check if we need decimals and retrieve them
-      let decimals = 18;
+      let decimals: number | undefined;
       const hasUnscaled = Object.values(parsed.args || {}).some((a: any) => (a as any).isUnscaledTokenAmount);
       if (hasUnscaled) {
-          try {
-              const dec = await this.client.readContract({
+          const dec = await this.client.readContract({
                   address: address as Address,
                   abi: parseAbi(["function decimals() view returns (uint8)"]),
                   functionName: "decimals"
-              });
-              decimals = Number(dec);
-          } catch (err) {
-              console.warn(`Failed to fetch decimals for ${address}, defaulting to 18:`, err);
-          }
+          });
+          decimals = Number(dec);
+          if (!Number.isInteger(decimals) || decimals < 0 || decimals > 255) throw new Error("Invalid token decimals");
       }
 
       const abiFunc = writeFunctions.find((f: any) => f.name === parsed.functionName);
@@ -512,15 +519,10 @@ Return ONLY valid JSON. No markdown, no explanations.`;
           
           let val: any = parsedArg.value;
           if (parsedArg.isUnscaledTokenAmount) {
-              const floatVal = parseFloat(val);
-              if (!isNaN(floatVal)) {
-                  const multiplier = Math.pow(10, decimals);
-                  const integerPart = Math.floor(floatVal);
-                  const fractionalPart = floatVal - integerPart;
-                  val = BigInt(integerPart) * BigInt(multiplier) + BigInt(Math.floor(fractionalPart * multiplier));
-              } else {
-                  throw new Error(`Failed to parse float token amount: ${val}`);
+              if (decimals === undefined || typeof val !== "string" || !/^\d+(\.\d+)?$/.test(val)) {
+                throw new Error(`Invalid exact token amount: ${val}`);
               }
+              val = parseUnits(val, decimals);
           } else {
               if (input.type.startsWith("uint") || input.type.startsWith("int")) {
                   val = BigInt(val);
@@ -567,14 +569,37 @@ Return ONLY valid JSON. No markdown, no explanations.`;
           return val;
       };
 
+      // A successful simulation proves execution is possible, not that the
+      // user should approve it. Keep every signable result review-gated.
+      const signable = simulationStatus === "success";
+      const blockingReasons = signable ? [] : [simulationStatus === "skipped" ? "SIMULATION_REQUIRED" : "SIMULATION_REVERTED"];
+      const risk = signable ? "review" : "blocked";
+      const explorerBase = getExplorerUrlForChain(this.chain.id);
+
       return {
           success: true,
+          chainId: this.chain.id,
+          network: this.chain.name,
+          to: address,
+          value: value ?? "0",
           functionName: parsed.functionName,
           args: resolvedArgs.map(serializeValue),
           encodedCalldata,
           simulationStatus,
           simulationError,
-          simulationResult
+          simulationResult,
+          risk,
+          signable,
+          blockingReasons,
+          requiresUserConfirmation: true,
+          explanation: `${parsed.functionName} call prepared for ${this.chain.name}. Review the target, arguments, value, and simulation before signing.`,
+          transaction: {
+            chainId: this.chain.id,
+            to: address,
+            data: encodedCalldata,
+            value: value ?? "0"
+          },
+          explorer: `${explorerBase}/address/${address}`
       };
   }
 }
