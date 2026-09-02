@@ -42,3 +42,5 @@ Wallets should call `POST /api/wallet/prepare` with `chainId`, `contractAddress`
 6. Exercise `lookupGraph`, graph compilation, and read-only `eth_call` intent verification against a known BOT testnet contract.
 
 Deployment keys belong only in `contracts/.env.deployer`; they must not be present in the API/runtime `.env`. Runtime registry writes are disabled unless `VER_ENABLE_WRITES=true` and must use a separate `ATTESTER_PRIVATE_KEY`.
+Payment billing is not enforced by the current API; add a verified BOT Chain payment adapter before enabling x402 billing.
+External LLM intent parsing is disabled by default for wallet safety; enable `VER_ALLOW_EXTERNAL_INTENT_LLM=true` only after approving the provider, data policy, and monitoring controls.

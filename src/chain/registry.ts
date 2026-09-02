@@ -1,6 +1,6 @@
 import { createPublicClient, createWalletClient, http, Address } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { getActiveChain, getActiveNetwork } from './networks';
+import { getActiveChain, getChainById } from './networks';
 
 const REGISTRY_ABI = [
   {
@@ -40,25 +40,26 @@ export interface RegistryAttestation {
   attester: string;
   timestamp: number;
   verified: boolean;
+  registryAddress: string;
 }
 
-function getPublicClient() {
+function getPublicClient(chainId = getActiveChain().id) {
   return createPublicClient({
-    chain: getActiveChain(),
+    chain: getChainById(chainId),
     transport: http()
   });
 }
 
-function getRegistryAddress(): Address {
-  const addr = getActiveNetwork() === "botTestnet"
+export function getRegistryAddressForChain(chainId = getActiveChain().id): Address {
+  const addr = chainId === 968
     ? (process.env.BOT_TESTNET_REGISTRY_ADDRESS || DEFAULT_BOT_REGISTRY_ADDRESS)
     : (process.env.REGISTRY_ADDRESS || process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || LEGACY_XLAYER_REGISTRY_ADDRESS);
   return addr as Address;
 }
 
-export async function lookupGraph(protocolAddress: string): Promise<RegistryAttestation | null> {
-  const publicClient = getPublicClient();
-  const registryAddress = getRegistryAddress();
+export async function lookupGraph(protocolAddress: string, chainId = getActiveChain().id): Promise<RegistryAttestation | null> {
+  const publicClient = getPublicClient(chainId);
+  const registryAddress = getRegistryAddressForChain(chainId);
   
   if (registryAddress === '0x0000000000000000000000000000000000000000') return null;
 
@@ -83,6 +84,7 @@ export async function lookupGraph(protocolAddress: string): Promise<RegistryAtte
       attester: data[2],
       timestamp: Number(data[3]),
       verified: data[4],
+      registryAddress,
     };
   } catch (err) {
     console.error(`[Registry] Failed to lookup graph for ${protocolAddress}`, err);
@@ -90,7 +92,7 @@ export async function lookupGraph(protocolAddress: string): Promise<RegistryAtte
   }
 }
 
-export async function registerGraph(protocolAddress: string, graphHash: string, metadataURI: string): Promise<string | null> {
+export async function registerGraph(protocolAddress: string, graphHash: string, metadataURI: string, chainId = getActiveChain().id): Promise<string | null> {
   if (process.env.VER_ENABLE_WRITES !== "true") {
       console.error("[Registry] Writes disabled; set VER_ENABLE_WRITES=true in the dedicated signer process");
       return null;
@@ -104,13 +106,13 @@ export async function registerGraph(protocolAddress: string, graphHash: string, 
   const account = privateKeyToAccount(pk as `0x${string}`);
   const walletClient = createWalletClient({
     account,
-    chain: getActiveChain(),
+    chain: getChainById(chainId),
     transport: http()
   });
-  const publicClient = getPublicClient();
+  const publicClient = getPublicClient(chainId);
   
   try {
-    const registryAddress = getRegistryAddress();
+    const registryAddress = getRegistryAddressForChain(chainId);
     const code = await publicClient.getBytecode({ address: registryAddress });
     if (!code || code === '0x') {
       console.error(`[Registry] Cannot attest — no bytecode at ${registryAddress}`);

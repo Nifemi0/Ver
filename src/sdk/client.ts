@@ -10,6 +10,7 @@ import { VerSchema } from "../types/schema";
 import { decodeFunctionData, encodeFunctionData, createPublicClient, http, Address, parseAbi, parseUnits } from "viem";
 import { GenericLLMProvider } from "../engine/enrichment/llm.provider";
 import { getChainById, getExplorerApiUrlForChain, getExplorerUrlForChain } from "../chain/networks";
+import { getRegistryAddressForChain, lookupGraph } from "../chain/registry";
 
 // Chain parameters matching blockscout
 export class VerClient {
@@ -63,6 +64,26 @@ export class VerClient {
         };
         const { graph: compiledGraph } = await this.compiler.compile(input);
         graph = compiledGraph;
+        graph.registry!.registryAddress = getRegistryAddressForChain(this.chain.id);
+        if (process.env.VER_REGISTRY_LOOKUP !== "false") {
+          try {
+            const attestation = await lookupGraph(address, this.chain.id);
+            if (attestation) {
+              const activeHash = attestation.graphHash.toLowerCase();
+              const compiledHash = graph.registry!.graphHash.toLowerCase();
+              graph.registry = {
+                registered: activeHash !== `0x${"0".repeat(64)}`,
+                graphHash: graph.registry!.graphHash,
+                deploymentNetwork: graph.registry!.deploymentNetwork,
+                verified: attestation.verified && activeHash === compiledHash,
+                metadataURI: attestation.metadataURI,
+                registryAddress: attestation.registryAddress,
+              };
+            }
+          } catch (error) {
+            console.warn("[Registry] Attestation lookup unavailable; continuing with local graph hash", error);
+          }
+        }
         this.cache.set(cacheKey, graph);
     }
 
@@ -460,6 +481,16 @@ Return ONLY valid JSON. No markdown, no explanations.`;
       let parsed = this.tryDeterministicIntentParser(intent);
       
       if (!parsed) {
+          if (process.env.VER_ALLOW_EXTERNAL_INTENT_LLM !== "true") {
+              return {
+                  success: false,
+                  signable: false,
+                  simulationStatus: "skipped",
+                  risk: "blocked",
+                  blockingReasons: ["EXTERNAL_LLM_DISABLED"],
+                  error: "Intent requires external AI parsing, which is disabled by wallet safety policy."
+              };
+          }
           const userPrompt = `Target Contract: ${address}\nIntent: "${intent}"`;
           const llmOutput = await this.llmProvider.generate(systemPrompt, userPrompt);
           

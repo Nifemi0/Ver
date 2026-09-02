@@ -9,6 +9,7 @@ import { getChainById } from "../src/chain/networks";
 import { z } from "zod";
 
 const app = express();
+app.set("trust proxy", 1);
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "").split(",").map(x => x.trim()).filter(Boolean);
 app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
 
@@ -47,8 +48,8 @@ const WalletPrepareSchema = z.object({
     sender: z.string().refine(isAddress, "Invalid sender"),
     value: z.string().regex(/^\d+$/, "value must be a base-10 wei integer").optional(),
 }).strict();
-function getClient(req: express.Request): VerClient {
-    const rawChainId = req.query.chainId ?? req.body?.chainId ?? req.body?.arguments?.chainId ?? req.body?.params?.chainId;
+function getClient(req: express.Request, requestedChainId?: number): VerClient {
+    const rawChainId = requestedChainId ?? req.query?.chainId ?? req.body?.chainId ?? req.body?.arguments?.chainId ?? req.body?.params?.chainId;
     const chainId = rawChainId === undefined ? 968 : Number(rawChainId);
     if (!Number.isInteger(chainId)) throw new Error("chainId must be an integer");
     getChainById(chainId);
@@ -72,19 +73,22 @@ app.get(["/health", "/api/health"], (_req, res) => {
     });
 });
 
-// Simple in-memory IP rate limiter for basic protection
+// Bounded per-instance limiter. Production deployments should back this with a shared store.
 const ipCache = new Map<string, { count: number; lastReset: number }>();
 const LIMIT = 30; // 30 requests per minute
 const WINDOW = 60 * 1000;
+const MAX_TRACKED_IPS = 10_000;
 
 const rateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const rawIp = req.headers["x-forwarded-for"];
-    const ipStr = (Array.isArray(rawIp) ? rawIp[0] : rawIp) || req.socket.remoteAddress || "unknown";
-    const ip = (ipStr || "unknown").split(",")[0]?.trim() || "unknown";
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
     const now = Date.now();
     const clientLimit = ipCache.get(ip);
     
     if (!clientLimit) {
+        if (ipCache.size >= MAX_TRACKED_IPS) {
+            const oldest = ipCache.keys().next().value;
+            if (oldest) ipCache.delete(oldest);
+        }
         ipCache.set(ip, { count: 1, lastReset: now });
         return next();
     }
@@ -100,47 +104,6 @@ const rateLimiter = (req: express.Request, res: express.Response, next: express.
     
     clientLimit.count += 1;
     next();
-};
-
-const x402Middleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // If request has payment signature (x402 verification)
-    if (req.headers["x-payment"] || req.headers["authorization"] || req.headers["payment-signature"]) {
-        return next();
-    }
-    
-    const asset = process.env.X402_ASSET_ADDRESS;
-    const payTo = process.env.X402_PAY_TO;
-    if (!asset || !payTo || !isAddress(asset) || !isAddress(payTo)) {
-        return res.status(503).json({ error: "BOT Chain payment configuration is unavailable" });
-    }
-
-    // Unpaid request -> return a BOT Chain 402 challenge
-    const challenge = {
-        x402Version: 2,
-        resource: {
-            url: `https://${req.get("host") || "verprotocol.vercel.app"}${req.originalUrl}`,
-            description: "Semantic Protocol Graph Compilation service for AI Agents",
-            mimeType: "application/json"
-        },
-        accepts: [
-            {
-                scheme: "exact",
-                network: "eip155:968",
-                asset,
-                amount: "10000",
-                payTo,
-                maxTimeoutSeconds: 300,
-                extra: { name: "USD₮0", version: "1" }
-            }
-        ]
-    };
-    
-    const base64Challenge = Buffer.from(JSON.stringify(challenge)).toString("base64");
-    res.setHeader("PAYMENT-REQUIRED", base64Challenge);
-    return res.status(402).json({ 
-        error: "Payment Required", 
-        message: "This endpoint requires x402 payment protocol." 
-    });
 };
 
 const handler = async (req: express.Request, res: express.Response) => {
@@ -166,7 +129,8 @@ const handler = async (req: express.Request, res: express.Response) => {
             trace
         });
     } catch (e: any) {
-        return res.status(500).json({ error: e.message });
+        console.error("[API] compile failed", e);
+        return res.status(500).json({ error: "Protocol compilation failed" });
     }
 };
 
@@ -193,11 +157,18 @@ app.post("/api/compile-intent", rateLimiter, async (req, res) => {
         if (!intent || typeof intent !== "string") {
             return res.status(400).json({ error: "A non-empty intent is required" });
         }
+        if (intent.trim().length > 1000) {
+            return res.status(400).json({ error: "Intent must be 1000 characters or fewer" });
+        }
+        if (sender && !isAddress(sender)) {
+            return res.status(400).json({ error: "A valid sender is required" });
+        }
         
         const result = await getClient(req).compileAgentIntent(contractAddress, intent, sender);
-        return res.json(result);
+        return res.status(result.signable === false ? 422 : 200).json(result);
     } catch (e: any) {
-        return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });
+        console.error("[API] intent compilation failed", e);
+        return res.status(500).json({ error: "Intent compilation failed" });
     }
 });
 
@@ -206,11 +177,12 @@ app.post("/api/wallet/prepare", rateLimiter, async (req, res) => {
     if (!parsed.success) return res.status(400).json({ error: "Invalid wallet request", details: parsed.error.flatten() });
     try {
         const { chainId, contractAddress, intent, sender, value } = parsed.data;
-        const result = await getClient({ ...req, body: { chainId } } as express.Request)
+        const result = await getClient(req, chainId)
             .compileAgentIntent(contractAddress, intent, sender, value);
         return res.status(result.signable ? 200 : 422).json(result);
     } catch (e: any) {
-        return res.status(422).json({ error: e.message || "Wallet preparation failed" });
+        console.error("[API] wallet preparation failed", e);
+        return res.status(422).json({ error: "Wallet preparation failed" });
     }
 });
 
@@ -227,11 +199,18 @@ app.get("/api/compile-intent", rateLimiter, async (req, res) => {
         if (!intent || typeof intent !== "string") {
             return res.status(400).json({ error: "A non-empty intent is required" });
         }
+        if (intent.trim().length > 1000) {
+            return res.status(400).json({ error: "Intent must be 1000 characters or fewer" });
+        }
+        if (sender && !isAddress(sender)) {
+            return res.status(400).json({ error: "A valid sender is required" });
+        }
         
         const result = await getClient(req).compileAgentIntent(contractAddress, intent, sender);
-        return res.json(result);
+        return res.status(result.signable === false ? 422 : 200).json(result);
     } catch (e: any) {
-        return res.status(500).json({ error: e.message || "Failed to compile intent due to server configuration." });
+        console.error("[API] intent compilation failed", e);
+        return res.status(500).json({ error: "Intent compilation failed" });
     }
 });
 

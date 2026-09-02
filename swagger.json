@@ -64,6 +64,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "chainId": { "type": "integer", "enum": [968, 196], "description": "BOT Chain is primary; 196 is compatibility-only." },
                   "contractAddress": { "type": "string", "description": "Target contract (0x...)" },
                   "intent": { "type": "string", "description": "Natural language intent" },
                   "sender": { "type": "string", "description": "Optional sender for eth_call simulation" }
@@ -75,7 +76,7 @@
         },
         "responses": {
           "200": {
-            "description": "Compiled intent with encoded calldata",
+            "description": "Compiled intent with encoded calldata; signability is separately reported",
             "content": {
               "application/json": {
                 "schema": {
@@ -91,6 +92,7 @@
               }
             }
           },
+          "422": { "description": "Intent compiled but cannot be signed or was blocked" },
           "429": { "description": "Rate limited" },
           "500": { "description": "Intent compile error" }
         }
