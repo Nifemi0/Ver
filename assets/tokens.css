@@ -1,13 +1,11 @@
 /* ============================================================
-   HashGraph Design System Tokens
+   Ver Protocol Design System Tokens
    ============================================================ */
 
 :root {
   --color-brand:        #0ea5e9;
   --color-brand-light:  #e0f2fe;
   --color-brand-dark:   #0c4a6e;
-  --color-hashkey:      #10B981;
-  --color-hashkey-soft: rgba(16, 185, 129, 0.12);
 
   --color-surface:      #FFFFFF;
   --color-surface-alt:  #FAFAFA;

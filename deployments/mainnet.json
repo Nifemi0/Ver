@@ -1,4 +1,5 @@
 {
+  "legacy": true,
   "network": "X Layer Mainnet",
   "chainId": 196,
   "contractName": "VerRegistry",

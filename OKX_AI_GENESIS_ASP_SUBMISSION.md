@@ -1,3 +1,5 @@
+> ARCHIVED LEGACY SUBMISSION: this document describes the former X Layer/OKX demo and is not the current BOT Chain product brief.
+
 # OKX.AI Genesis Hackathon — Ver Protocol ASP Submission Pack
 
 **Deadline:** July 17, 2026 · 23:59 UTC  

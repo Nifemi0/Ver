@@ -36,14 +36,15 @@ Cursor / Claude / Onchain OS Agents
 curl -s "https://verprotocol.vercel.app/api/compile?chainId=968&address=0x922835859623d6F3b99a2742D585E093bBA0a740"
 ```
 
-### 2. Compile an Intent to Calldata
+### 2. Prepare a Wallet Transaction
 
 ```bash
-curl -X POST https://verprotocol.vercel.app/api/compile-intent \
+curl -X POST https://verprotocol.vercel.app/api/wallet/prepare \
   -H "Content-Type: application/json" \
   -d '{
     "chainId": 968,
     "contractAddress": "0x922835859623d6F3b99a2742D585E093bBA0a740",
+    "sender": "0x1111111111111111111111111111111111111111",
     "intent": "Approve 1 PRWA to 0x1111111111111111111111111111111111111111"
   }'
 ```

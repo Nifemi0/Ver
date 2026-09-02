@@ -1,4 +1,5 @@
 {
+  "legacy": true,
   "network": "X Layer Testnet",
   "chainId": 1952,
   "contractName": "VerRegistry",

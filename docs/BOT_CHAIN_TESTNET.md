@@ -30,7 +30,7 @@ The BOT testnet registry v2 is deployed and source-verified at `0xfEB4423E669a0e
 
 Wallet/API requests should still pass `chainId` explicitly. The HTTP API accepts `chainId=968` for BOT Chain testnet and `chainId=196` only for compatibility; omitted values now select BOT Chain `968`.
 
-Wallets can call `POST /api/wallet/prepare` with the same payload as `/api/compile-intent`. The response includes `transaction.chainId`, `transaction.to`, `transaction.data`, `transaction.value`, `simulationStatus`, `risk`, and `explorer`. Treat `simulationStatus !== "success"` as non-signable and perform a final wallet-side chain check before signing.
+Wallets should call `POST /api/wallet/prepare` with `chainId`, `contractAddress`, `sender`, and `intent`. The response includes `transaction.chainId`, `transaction.to`, `transaction.data`, `transaction.value`, `simulationStatus`, `risk`, and `explorer`. Treat `simulationStatus !== "success"` as non-signable and perform a final wallet-side chain check before signing.
 
 ## Safe deployment sequence
 

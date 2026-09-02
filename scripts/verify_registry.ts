@@ -10,9 +10,9 @@ import { getExplorerApiUrlForChain, getExplorerUrlForChain } from "../src/chain/
 
 dotenv.config();
 
-const ADDRESS = process.env.BOT_TESTNET_REGISTRY_ADDRESS ?? process.env.REGISTRY_ADDRESS;
-const CHAIN_ID = Number(process.env.VERIFY_CHAIN_ID ?? process.env.REGISTRY_CHAIN_ID ?? 968);
-if (!ADDRESS) throw new Error("Set BOT_TESTNET_REGISTRY_ADDRESS or REGISTRY_ADDRESS before verification.");
+const ADDRESS = process.env.BOT_TESTNET_REGISTRY_ADDRESS;
+const CHAIN_ID = 968;
+if (!ADDRESS) throw new Error("Set BOT_TESTNET_REGISTRY_ADDRESS before BOT Chain verification.");
 const API = process.env.VERIFY_EXPLORER_API_URL ?? getExplorerApiUrlForChain(CHAIN_ID);
 const BUILD_INFO = path.join(
   __dirname,
