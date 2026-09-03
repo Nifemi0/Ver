@@ -27,6 +27,13 @@ if ($link.projectId -ne 'prj_hE8q0aqirBkswN4stxOPQpGdfv72' -or $link.orgId -ne '
     throw 'Unexpected Vercel project link.'
 }
 Write-Output "CI gate passed for $commit (run $($run.databaseId)). Deploying preview only."
+if ($IsWindows) {
+    # Native function dependencies must be built for the Linux deployment runtime.
+    # Upload this clean CI-approved source; Vercel builds it with npm ci on Linux.
+    vercel deploy --yes --scope nifemi0s-projects
+    Require-Success 'Build and deploy preview on Linux'
+    exit 0
+}
 vercel pull --yes --environment=preview --git-branch=main --scope nifemi0s-projects
 Require-Success 'Pull preview settings'
 vercel build --scope nifemi0s-projects
