@@ -22,25 +22,33 @@ Copy `.env.example` to `.env`, then set:
 ```dotenv
 VER_NETWORK=botTestnet
 BOT_TESTNET_RPC_URL=https://rpc.bohr.life
-VER_EXPLORER_API_URL=https://scan.bohr.life/api
-VER_EXPLORER_URL=https://scan.bohr.life
+BOT_TESTNET_EXPLORER_API_URL=https://scan.bohr.life/api
+BOT_TESTNET_EXPLORER_URL=https://scan.bohr.life
 ```
 
 The BOT testnet registry v2 is deployed and source-verified at `0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5`. It adds owner-controlled attester revocation. The original registry at `0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7` remains on-chain but is superseded and recorded in `deployments/botTestnet-v1.json`. Keep BOT deployments separate from the X Layer registry and configure v2 as `BOT_TESTNET_REGISTRY_ADDRESS`.
 
 Wallet/API requests should still pass `chainId` explicitly. The HTTP API accepts `chainId=968` for BOT Chain testnet and `chainId=196` only for compatibility; omitted values now select BOT Chain `968`.
 
-Wallets should call `POST /api/wallet/prepare` with `chainId`, `contractAddress`, `sender`, and `intent`. The response includes `transaction.chainId`, `transaction.to`, `transaction.data`, `transaction.value`, `simulationStatus`, `risk`, and `explorer`. Treat `simulationStatus !== "success"` as non-signable and perform a final wallet-side chain check before signing.
+Wallets should call `POST /api/wallet/prepare` with explicit `chainId`, `contractAddress`, `sender`, and one supported `intent`. Require `signable === true` AND `simulationStatus === "success"`, enforce `expiresAt`, verify the active chain/account and independently decode the transaction. See [wallet-team handoff](WALLET_TEAM_HANDOFF.md). Repository fixes are not a claim that the hosted API has been redeployed.
 
 ## Safe deployment sequence
 
 1. Obtain test BOT from the official faucet and confirm the deployer address and balance.
 2. Run the contract build and local tests.
-3. Run a read-only chain check that asserts chain ID `968`, RPC reachability, and no pre-existing code at the intended registry address (a new deployment has no predetermined address).
-4. After explicit approval, deploy only with `npx hardhat run scripts/deploy.ts --network botTestnet` from `contracts/`.
-5. Record the generated address and transaction in `deployments/botTestnet.json`, verify source on the BOT explorer if supported, and set `BOT_TESTNET_REGISTRY_ADDRESS` locally or in the test environment.
+3. Recheck official network parameters, RPC chain ID `968`, the public deployer address, test BOT balance, nonce and estimated deployment cost. Confirm no unexpected deployment is pending. Do not print the private key.
+4. After explicit approval, the deployment process requires `VER_ENABLE_DEPLOYMENT=true`, `VER_DEPLOYMENT_CONFIRM_CHAIN_ID=968`, and an explicit `VER_REGISTRY_CONTRACT` selection, then `npx hardhat run scripts/deploy.ts --network botTestnet` from `contracts/`. V3 is a separate candidate requiring governance-policy review; it is not yet deployed.
+5. The script creates a new address-qualified file in `deployments/`, never overwriting the active record. Verify source and read-only behavior on the BOT explorer. Only after acceptance and approval update the active deployment record and environment registry address; preserve the V2 record for rollback/history.
 6. Exercise `lookupGraph`, graph compilation, and read-only `eth_call` intent verification against a known BOT testnet contract.
 
 Deployment keys belong only in `contracts/.env.deployer`; they must not be present in the API/runtime `.env`. Runtime registry writes are disabled unless `VER_ENABLE_WRITES=true` and must use a separate `ATTESTER_PRIVATE_KEY`.
 Payment billing is not enforced by the current API; add a verified BOT Chain payment adapter before enabling x402 billing.
-External LLM intent parsing is disabled by default for wallet safety; enable `VER_ALLOW_EXTERNAL_INTENT_LLM=true` only after approving the provider, data policy, and monitoring controls.
+Transaction preparation never uses external LLM intent parsing; the former `VER_ALLOW_EXTERNAL_INTENT_LLM` flag cannot enable it. AI may explain facts outside the signing path.
+
+## Graph and registry migration
+
+Graph schema/parser 1.1.0 removes custom errors from emitted events and uses a new cache namespace. Graphs containing errors will produce different hashes and require fresh, explicitly approved attestations. Old matching hashes must not be assumed valid for newly compiled graphs.
+
+V3 retains the V2 read ABI but adds zero-address rejection, two-step ownership transfer, and attester epochs. Revoking an attester invalidates its existing graphs; reauthorization does not revive them. Accepting ownership also revokes the old owner's attester role and its graphs. Use a dedicated attester rather than the owner for normal publishing. Review this policy with the wallet team and multisig operators before deployment. V2 source and deployed behavior remain unchanged.
+
+Contract tooling uses Hardhat 3 and Node >=22.13. Run `npx hardhat build` and `npm test`. Dependency audits are part of CI; remaining upstream advisory exceptions must be reviewed, not hidden by a passing threshold.

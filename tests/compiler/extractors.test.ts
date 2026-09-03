@@ -44,6 +44,14 @@ describe('Compiler Extractors', () => {
         expect(result.events[0].source).toBe("ABI");
     });
 
+    it('EventExtractor: never counts custom errors as emitted events', async () => {
+        const result = await new EventExtractor().extract(getMockInput([
+            { type: "event", name: "Transfer" },
+            { type: "error", name: "InsufficientBalance" }
+        ]));
+        expect(result.events).toEqual([{ name: "Transfer", source: "ABI" }]);
+    });
+
     it('FunctionExtractor: separates privileged and public with explainability', async () => {
         const extractor = new FunctionExtractor();
         const input = getMockInput([

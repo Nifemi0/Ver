@@ -3,9 +3,8 @@ import { CACHE_CONFIG } from "../config/cache";
 import { EVIDENCE_THRESHOLD } from "../config/thresholds";
 import fs from "fs";
 import path from "path";
-import semver from "semver";
 
-export const CURRENT_SCHEMA_VERSION = "1.0.0";
+export const CURRENT_SCHEMA_VERSION = "1.1.0";
 export const CURRENT_ENRICHMENT_VERSION = "1.0.1";
 
 export interface CacheMetrics {
@@ -181,8 +180,8 @@ export class VerCache {
       return null;
     }
 
-    // Schema version migration guard (exact major version match required)
-    if (!semver.satisfies(row.schema_version, `^${semver.major(CURRENT_SCHEMA_VERSION)}.0.0`)) {
+    // Exact schema version: event semantics and attestation hashes changed in 1.1.0.
+    if (row.schema_version !== CURRENT_SCHEMA_VERSION) {
       this.metrics.expired++; // treat as expired/invalid
       this.delete(contractAddress);
       this.metrics.misses++;

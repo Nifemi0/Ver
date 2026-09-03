@@ -1,7 +1,7 @@
 {
   "name": "aic-mcp",
-  "version": "1.0.5",
-  "description": "Deterministic Protocol Intelligence compiler for AI. Compiles smart contracts into Protocol Graphs via MCP.",
+  "version": "1.0.6",
+  "description": "BOT Chain wallet-safety and protocol intelligence: verified contract graphs and simulation-gated unsigned token transactions over HTTP and MCP.",
   "main": "dist/sdk/client.js",
   "module": "dist/sdk/client.mjs",
   "types": "dist/sdk/client.d.ts",
@@ -24,7 +24,12 @@
     "dist",
     "scripts/postinstall.js",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "SDK.md",
+    "swagger.json",
+    "docs/WALLET_TEAM_HANDOFF.md",
+    "docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md",
+    "docs/BOT_CHAIN_TESTNET.md"
   ],
   "scripts": {
     "build:mcp": "tsup src/server/mcp.ts src/sdk/client.ts --format cjs,esm --target node20 --out-dir dist --dts --clean --sourcemap",

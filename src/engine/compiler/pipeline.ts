@@ -49,7 +49,7 @@ export class CompilerPipeline {
             unsupported: [],
             extraction_time_ms: 0,
             stage_times: {},
-            parser_version: "1.0.0",
+            parser_version: "1.1.0",
             trace: ""
         };
         

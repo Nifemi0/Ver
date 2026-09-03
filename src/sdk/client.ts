@@ -7,7 +7,7 @@ import { DataNormalizer } from "../engine/explorer/normalizer";
 import { CompilerPipeline } from "../engine/compiler/pipeline";
 import { SemanticEnricher, ILLMProvider } from "../engine/enrichment/enricher";
 import { VerSchema } from "../types/schema";
-import { decodeFunctionData, encodeFunctionData, createPublicClient, http, Address, parseAbi, parseUnits } from "viem";
+import { decodeFunctionData, decodeFunctionResult, encodeFunctionData, createPublicClient, http, Address, parseAbi, parseUnits, formatUnits, isAddress } from "viem";
 import { GenericLLMProvider } from "../engine/enrichment/llm.provider";
 import { getChainById, getExplorerApiUrlForChain, getExplorerUrlForChain } from "../chain/networks";
 import { getRegistryAddressForChain, lookupGraph } from "../chain/registry";
@@ -27,8 +27,8 @@ export class VerClient {
 
   constructor(llmProvider?: ILLMProvider, chainId?: number, explorerRepository?: IExplorerRepository) {
     this.chain = getChainById(chainId);
-    this.cacheKeyPrefix = `${this.chain.id}:`;
-    this.client = createPublicClient({ chain: this.chain, transport: http() });
+    this.cacheKeyPrefix = `graph-1.1.0:${this.chain.id}:`;
+    this.client = createPublicClient({ chain: this.chain, transport: http(undefined, { timeout: 10000, retryCount: 1 }) });
     this.cache = new VerCache();
     this.semanticCache = new SemanticCache();
     this.repo = explorerRepository ?? (this.chain.id === 196
@@ -126,7 +126,7 @@ export class VerClient {
       const graph = await this.getProtocolGraph(address);
       if (!graph.metadata.contract_address) throw new Error("Invalid graph");
 
-      const abiRaw = await this.repo.fetchContractAbi(address);
+      const abiRaw = (await this.normalizer.normalize(address)).abi;
       if (!abiRaw) throw new Error("No ABI found for decoding");
       
       const abi = JSON.parse(abiRaw);
@@ -176,6 +176,13 @@ export class VerClient {
 
       for (const func of graph.security.privileged_functions) {
           if (func.name.toLowerCase().includes(q)) results.push({ type: "privileged_function", ...func });
+      }
+      const normalized = await this.normalizer.normalize(address);
+      const privileged = new Set(graph.security.privileged_functions.map(f => f.name));
+      for (const func of JSON.parse(normalized.abi || "[]")) {
+          if (func.type === "function" && !privileged.has(func.name) && func.name.toLowerCase().includes(q)) {
+              results.push({ type: "public_function", name: func.name, inputs: func.inputs, stateMutability: func.stateMutability });
+          }
       }
       for (const role of graph.structural.roles) {
           if (role.name.toLowerCase().includes(q)) results.push({ type: "role", ...role });
@@ -264,7 +271,7 @@ export class VerClient {
    * Decodes a raw transaction event log from topics and data
    */
   public async decodeEventLog(address: string, topics: string[], data: string): Promise<any> {
-      const abiRaw = await this.repo.fetchContractAbi(address);
+      const abiRaw = (await this.normalizer.normalize(address)).abi;
       if (!abiRaw) throw new Error("No ABI found for event decoding");
       
       const abi = JSON.parse(abiRaw);
@@ -296,7 +303,7 @@ export class VerClient {
   }
 
   /**
-   * Estimates transaction gas and calculates expected cost in OKB tokens
+   * Estimates gas and returns exact base units with the selected native currency.
    */
   public async getGasEstimate(to: string, data: string, from?: string, value?: string): Promise<any> {
       try {
@@ -314,7 +321,10 @@ export class VerClient {
           return {
               gasEstimate: gasEstimate.toString(),
               gasPrice: gasPrice.toString(),
-              estimatedCostOKB: (Number(totalCost) / 1e18).toString()
+              chainId: this.chain.id,
+              nativeCurrency: this.chain.nativeCurrency.symbol,
+              estimatedCostWei: totalCost.toString(),
+              estimatedCostNative: formatUnits(totalCost, this.chain.nativeCurrency.decimals)
           };
       } catch (e: any) {
           return { error: "Failed to estimate gas", details: e.message };
@@ -399,11 +409,12 @@ export class VerClient {
       const cleanIntent = intent.trim().replace(/\s+/g, " ");
       
       // 1. Matches "Transfer 1.5 USDT to 0x1111..."
-      const transferRegex = /transfer\s+([\d\.]+)\s+(\w+)\s+to\s+(0x[a-fA-F0-9]{40})/i;
+      const transferRegex = /^transfer\s+(\d+(?:\.\d+)?)\s+([A-Za-z0-9._-]+)\s+to\s+(0x[a-fA-F0-9]{40})$/i;
       const transferMatch = cleanIntent.match(transferRegex);
       if (transferMatch) {
           return {
               functionName: "transfer",
+              assetSymbol: transferMatch[2],
               args: {
                   recipient: { value: transferMatch[3], isUnscaledTokenAmount: false },
                   amount: { value: transferMatch[1], isUnscaledTokenAmount: true }
@@ -412,11 +423,12 @@ export class VerClient {
       }
 
       // 2. Matches "Approve 500 USDC to/for 0x2222..."
-      const approveRegex = /approve\s+([\d\.]+)\s+(\w+)\s+(?:to|for)\s+(0x[a-fA-F0-9]{40})/i;
+      const approveRegex = /^approve\s+(\d+(?:\.\d+)?)\s+([A-Za-z0-9._-]+)\s+(?:to|for)\s+(0x[a-fA-F0-9]{40})$/i;
       const approveMatch = cleanIntent.match(approveRegex);
       if (approveMatch) {
           return {
               functionName: "approve",
+              assetSymbol: approveMatch[2],
               args: {
                   spender: { value: approveMatch[3], isUnscaledTokenAmount: false },
                   amount: { value: approveMatch[1], isUnscaledTokenAmount: true }
@@ -428,8 +440,8 @@ export class VerClient {
   }
 
   /**
-   * Agentic Intent Compiler (AIC) - MVP
-   * Translates a natural language intent into verified, simulated, and safe calldata.
+   * Wallet intent preparation. The legacy method name remains compatible.
+   * Prepares exact unsigned calldata; simulation is not a safety guarantee.
    */
   public async compileAgentIntent(
       address: string,
@@ -437,11 +449,20 @@ export class VerClient {
       sender?: string,
       value?: string
   ): Promise<any> {
+      const blocked = (code: string, error: string) => ({ success: false, signable: false, simulationStatus: "skipped", risk: "blocked", blockingReasons: [code], error });
+      if (!isAddress(address) || (sender !== undefined && !isAddress(sender))) return blocked("INVALID_ADDRESS", "Valid contract and sender addresses are required.");
+      if (typeof intent !== "string" || !intent.trim() || intent.length > 1000) return blocked("INVALID_INTENT", "Intent must be between 1 and 1000 characters.");
+      if (value !== undefined && !/^\d+$/.test(value)) return blocked("INVALID_VALUE", "Value must be a base-10 wei integer.");
+      if (value !== undefined && BigInt(value) !== 0n) return blocked("UNSUPPORTED_NATIVE_VALUE", "Token approvals and transfers must have zero native value.");
+      // A model must never turn unsupported/negated/conditional text into signing authority.
+      const parsed = this.tryDeterministicIntentParser(intent);
+      if (!parsed) return blocked("UNSUPPORTED_INTENT", "Use a single complete 'approve AMOUNT SYMBOL to ADDRESS' or 'transfer AMOUNT SYMBOL to ADDRESS' request. Conditions, negations and compound actions are not supported.");
+      if (await this.client.getChainId() !== this.chain.id) return blocked("RPC_CHAIN_MISMATCH", "RPC network does not match the requested chain.");
       const bytecode = await this.client.getBytecode({ address: address as Address });
       if (!bytecode || bytecode === "0x") throw new Error(`No contract bytecode at ${address} on chain ${this.chain.id}`);
       const normalized = await this.normalizer.normalize(address);
       const abiRaw = normalized.abi;
-      if (!abiRaw || normalized.sourceCode?.includes("Pseudo-ABI generated")) {
+      if (!abiRaw || !normalized.sourceCode || normalized.sourceCode.includes("Pseudo-ABI generated")) {
         throw new Error("A verified ABI is required for wallet transaction preparation");
       }
       const abi = JSON.parse(abiRaw);
@@ -453,66 +474,8 @@ export class VerClient {
           x.stateMutability !== 'pure'
       );
 
-      const functionsList = writeFunctions.map((f: any) => {
-          const inputs = (f.inputs || []).map((i: any) => `${i.name} (${i.type})`).join(", ");
-          return `- ${f.name}(${inputs})`;
-      }).join("\n");
-
-      const systemPrompt = `You are the Agentic Intent Compiler (AIC) for ${this.chain.name}.
-Your task is to parse a natural language transaction intent and map it to a specific write function from the contract's ABI.
-
-Available write functions:
-${functionsList}
-
-Output ONLY a JSON object matching this schema:
-{
-  "functionName": "the name of the matching ABI function",
-  "args": {
-    "parameterName1": {
-      "value": "string representation of the value (e.g. '0x1234...', '1.5', '100')",
-      "isUnscaledTokenAmount": true // Set true if this is a token/ether amount that needs decimal scaling (e.g. 1.5 USDT -> 1.5)
-    }
-  }
-}
-If no function matches the intent, or if the parameters cannot be mapped, return an empty JSON object.
-Return ONLY valid JSON. No markdown, no explanations.`;
-
-      // Try deterministic parser first for offline / zero-latency flow
-      let parsed = this.tryDeterministicIntentParser(intent);
-      
-      if (!parsed) {
-          if (process.env.VER_ALLOW_EXTERNAL_INTENT_LLM !== "true") {
-              return {
-                  success: false,
-                  signable: false,
-                  simulationStatus: "skipped",
-                  risk: "blocked",
-                  blockingReasons: ["EXTERNAL_LLM_DISABLED"],
-                  error: "Intent requires external AI parsing, which is disabled by wallet safety policy."
-              };
-          }
-          const userPrompt = `Target Contract: ${address}\nIntent: "${intent}"`;
-          const llmOutput = await this.llmProvider.generate(systemPrompt, userPrompt);
-          
-          try {
-              let cleaned = llmOutput.trim();
-              if (cleaned.startsWith("```json")) {
-                  cleaned = cleaned.substring(7, cleaned.length - 3);
-              } else if (cleaned.startsWith("```")) {
-                  cleaned = cleaned.substring(3, cleaned.length - 3);
-              }
-              parsed = JSON.parse(cleaned.trim());
-          } catch (e: any) {
-              throw new Error(`LLM intent parsing failed: ${e.message}. Raw output: ${llmOutput}`);
-          }
-      }
-
-      if (!parsed.functionName) {
-          return {
-              success: false,
-              error: "Could not map intent to any available write function on the contract."
-          };
-      }
+      const symbol = await this.client.readContract({ address: address as Address, abi: parseAbi(["function symbol() view returns (string)"]), functionName: "symbol" });
+      if (typeof symbol !== "string" || parsed.assetSymbol.toLowerCase() !== symbol.toLowerCase()) return blocked("TOKEN_SYMBOL_MISMATCH", "Intent token symbol does not match the target contract.");
 
       // Check if we need decimals and retrieve them
       let decimals: number | undefined;
@@ -527,10 +490,11 @@ Return ONLY valid JSON. No markdown, no explanations.`;
           if (!Number.isInteger(decimals) || decimals < 0 || decimals > 255) throw new Error("Invalid token decimals");
       }
 
-      const abiFunc = writeFunctions.find((f: any) => f.name === parsed.functionName);
-      if (!abiFunc) {
-          throw new Error(`Parsed function ${parsed.functionName} not found in ABI`);
-      }
+      const matchingFunctions = writeFunctions.filter((f: any) => f.name === parsed.functionName && f.inputs?.length === 2 && f.inputs[0].type === "address" && f.inputs[1].type === "uint256");
+      const abiFunc = matchingFunctions[0];
+      if (matchingFunctions.length !== 1) return blocked("UNSUPPORTED_FUNCTION", "An unambiguous standard token function is required.");
+      const outputs = abiFunc.outputs ?? [];
+      if (outputs.length > 1 || (outputs.length === 1 && outputs[0].type !== "bool")) return blocked("UNSUPPORTED_RETURN_TYPE", "This token return type is not supported.");
 
       const resolvedArgs: any[] = [];
       for (const input of abiFunc.inputs || []) {
@@ -553,7 +517,9 @@ Return ONLY valid JSON. No markdown, no explanations.`;
               if (decimals === undefined || typeof val !== "string" || !/^\d+(\.\d+)?$/.test(val)) {
                 throw new Error(`Invalid exact token amount: ${val}`);
               }
+              if ((val.split(".")[1]?.length ?? 0) > decimals) return blocked("AMOUNT_PRECISION_EXCEEDED", "Amount has more fractional digits than the token supports; rounding is not allowed.");
               val = parseUnits(val, decimals);
+              if (val >= 2n ** 256n) return blocked("AMOUNT_OUT_OF_RANGE", "Amount exceeds uint256.");
           } else {
               if (input.type.startsWith("uint") || input.type.startsWith("int")) {
                   val = BigInt(val);
@@ -561,11 +527,12 @@ Return ONLY valid JSON. No markdown, no explanations.`;
                   val = val === "true" || val === true;
               }
           }
+          if (input.type === "address" && (!isAddress(val) || /^0x0{40}$/i.test(val))) return blocked("INVALID_RECIPIENT", "A valid non-zero recipient or spender is required.");
           resolvedArgs.push(val);
       }
 
       const encodedCalldata = encodeFunctionData({
-          abi,
+          abi: [abiFunc],
           functionName: parsed.functionName,
           args: resolvedArgs
       });
@@ -574,7 +541,8 @@ Return ONLY valid JSON. No markdown, no explanations.`;
       // Without a sender, eth_call runs from the zero address and every
       // transfer-like call reverts, which reads as a broken capability to
       // automated reviewers. Calldata is already ABI-verified at encode time.
-      let simulationStatus: "success" | "reverted" | "skipped" = "skipped";
+      let simulationStatus: "success" | "reverted" | "skipped" | "failed" | "unavailable" = "skipped";
+      let simulationCode = "SIMULATION_REQUIRED";
       let simulationError: string | undefined;
       let simulationResult: string | undefined;
 
@@ -588,9 +556,19 @@ Return ONLY valid JSON. No markdown, no explanations.`;
           });
           simulationStatus = "success";
           simulationResult = simResult.data || "0x";
+          if (outputs.length === 0) {
+              if (simulationResult !== "0x") { simulationStatus = "failed"; simulationCode = "INVALID_SIMULATION_RESULT"; }
+          } else {
+              try {
+                  const returned = decodeFunctionResult({ abi: [abiFunc], functionName: parsed.functionName, data: simulationResult as `0x${string}` });
+                  if (simulationResult.length !== 66 || returned !== true) { simulationStatus = "failed"; simulationCode = "TOKEN_RETURNED_FALSE"; }
+              } catch { simulationStatus = "failed"; simulationCode = "INVALID_SIMULATION_RESULT"; }
+          }
         } catch (e: any) {
-          simulationStatus = "reverted";
-          simulationError = e.shortMessage || e.message;
+          const reverted = /revert/i.test(e.shortMessage ?? "") || Boolean(e.walk?.((cause: any) => /ExecutionReverted|ContractFunctionReverted/.test(cause.name)));
+          simulationStatus = reverted ? "reverted" : "unavailable";
+          simulationCode = reverted ? "SIMULATION_REVERTED" : "RPC_UNAVAILABLE";
+          simulationError = reverted ? "Contract execution reverted." : "Simulation provider unavailable. Retry preparation.";
         }
       }
 
@@ -603,7 +581,7 @@ Return ONLY valid JSON. No markdown, no explanations.`;
       // A successful simulation proves execution is possible, not that the
       // user should approve it. Keep every signable result review-gated.
       const signable = simulationStatus === "success";
-      const blockingReasons = signable ? [] : [simulationStatus === "skipped" ? "SIMULATION_REQUIRED" : "SIMULATION_REVERTED"];
+      const blockingReasons = signable ? [] : [simulationCode];
       const risk = signable ? "review" : "blocked";
       const explorerBase = getExplorerUrlForChain(this.chain.id);
 
@@ -623,9 +601,13 @@ Return ONLY valid JSON. No markdown, no explanations.`;
           signable,
           blockingReasons,
           requiresUserConfirmation: true,
+          sender,
+          preparedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 60000).toISOString(),
           explanation: `${parsed.functionName} call prepared for ${this.chain.name}. Review the target, arguments, value, and simulation before signing.`,
           transaction: {
             chainId: this.chain.id,
+            ...(sender ? { from: sender } : {}),
             to: address,
             data: encodedCalldata,
             value: value ?? "0"

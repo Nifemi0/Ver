@@ -1,181 +1,57 @@
-# BOT Chain Programmatic SDK Guide
+# BOT Chain SDK integration
 
-The `aic-mcp` package exports the `VerClient` class, allowing you to programmatically access all the compiler pipeline stages, semantic reasoning, transaction simulations, and decoding layers inside your Node.js/TypeScript applications.
-
----
-
-## 1. Installation
-
-First, install the library in your project:
-
-```bash
-npm install aic-mcp
-```
-
-Make sure your environment variables are configured (e.g., in a `.env` file):
-```bash
-# BOT Chain is the default network
-VER_NETWORK=botTestnet
-BOT_TESTNET_RPC_URL=https://rpc.bohr.life
-
-# Optional: LLM configuration for Semantic Layer Enrichment
-OPENAI_API_KEY=your-api-key
-```
-
----
-
-## 2. Quick Start
-
-Initialize the client and compile a protocol graph:
+Release candidate `1.0.6` exports `VerClient` from `aic-mcp`. This SDK runs in Node.js (Node 22), not directly inside a wallet extension: use the HTTP endpoint from the wallet, or run the SDK on your backend. Package publication is a separate release step; do not assume the npm latest version contains these fixes.
 
 ```typescript
 import { VerClient } from "aic-mcp";
-
-// Initialize client
 const client = new VerClient(undefined, 968);
-
-async function main() {
-  const address = "0x922835859623d6F3b99a2742D585E093bBA0a740"; // BOT Chain PRWA token
-  
-  // 1. Fetch and compile full protocol graph
-  const graph = await client.getProtocolGraph(address);
-  
-  console.log("Protocol Name:", graph.metadata.protocol_name);
-  console.log("Intent Summary:", graph.semantic.intent.value);
-  console.log("Roles Found:", graph.structural.roles.map(r => r.name));
+const result = await client.compileAgentIntent(
+  "0x922835859623d6F3b99a2742D585E093bBA0a740",
+  "approve 1 PRWA to 0x2222222222222222222222222222222222222222",
+  "0x1111111111111111111111111111111111111111"
+);
+// Preparation only. This example never signs or broadcasts.
+if (result.signable !== true || result.simulationStatus !== "success") {
+  throw new Error("Preparation blocked");
 }
-
-main().catch(console.error);
+console.log(result.transaction);
 ```
 
----
+The historical `compileAgentIntent` method name is retained for compatibility. Its signing path is deterministic: no external LLM fallback, even if `VER_ALLOW_EXTERNAL_INTENT_LLM=true` is inherited from an old environment.
 
-## 3. SDK API Reference
+## Wallet contract
 
-The `VerClient` class exposes the following methods:
+Prefer `POST /api/wallet/prepare` with explicit `chainId`, `contractAddress`, `sender`, `intent` and optional decimal-string `value` (only zero is supported). Exact grammar:
 
-### `getProtocolGraph(address: string, forceRefresh?: boolean): Promise<VerSchema>`
-Compiles the target contract into a full structured JSON graph.
+- `approve AMOUNT SYMBOL to ADDRESS` (`for` is also accepted).
+- `transfer AMOUNT SYMBOL to ADDRESS`.
 
-* **Parameters:**
-  * `address`: The EVM address of the smart contract.
-  * `forceRefresh` (Optional): Set to `true` to bypass cache and re-compile/re-fetch.
-* **Returns:** An `VerSchema` object containing structural details, semantic intent, security guardrails, and developer integration notes.
+Match the symbol to the selected contract; symbols alone are not unique token identities. Excess fractional precision is rejected, never rounded. Unsupported text is rejected in full rather than partially interpreted. No swaps, conditions, batches, native transfers, ENS resolution, or arbitrary model-generated calls are supported.
 
-### `getContractSummary(address: string): Promise<ContractSummary>`
-A helper that extracts a lightweight, developer-friendly overview of the contract.
+Prepared responses include `sender`, `preparedAt`, `expiresAt` (60-second lifetime), `transaction.from/to/data/value/chainId`, `signable`, `simulationStatus`, `risk`, `blockingReasons`, and `requiresUserConfirmation`. `success: true` means compilation completed; it is NOT signing permission. Statuses are `success`, `reverted`, `skipped`, `failed`, or `unavailable`. `risk: review` is not a safe-contract certification.
 
-* **Returns:**
-  ```typescript
-  interface ContractSummary {
-    protocol_name: string;
-    intent: string;
-    structural_integrity: number;
-    roles: string[];
-    dependencies: string[];
-    privileged_functions: string[];
-  }
-  ```
+The wallet must reject stale responses, require matching active account and chain, independently decode and compare the target/arguments/value to the user's request, re-simulate before signing, and obtain confirmation. Only the wallet signs and broadcasts. See [complete handoff checklist](docs/WALLET_TEAM_HANDOFF.md).
 
-### `explainTransaction(address: string, calldata: string): Promise<DecodedTx>`
-Decodes raw transaction calldata using the contract's ABI, and returns security classification based on compiled privilege mappings.
+## Other methods
 
-* **Parameters:**
-  * `address`: The target contract address.
-  * `calldata`: The hex string of the transaction payload.
-* **Returns:**
-  ```typescript
-  interface DecodedTx {
-    function: string;         // e.g. "transfer"
-    args: any[];              // Serialized function arguments
-    classification: string;   // e.g. "privileged_admin" | "public mutator"
-    reason: string;           // Rationale for classification
-  }
-  ```
+| Method | Purpose and limitation |
+| --- | --- |
+| `getProtocolGraph(address, forceRefresh?)` | Contract structure; graph format 1.1.0 excludes custom errors from events. |
+| `getContractSummary(address)` | Lightweight summary; completeness scores are not security guarantees. |
+| `explainTransaction(address, calldata)` | Proxy-resolved ABI decoding and privilege classification; not an authorization decision. |
+| `decodeEventLog(address, topics, data)` | Decode emitted logs with the resolved ABI. |
+| `searchProtocol(address, query)` | Search roles, events, privileged and public functions. |
+| `simulateTransaction(to, data, from?, value?)` | Generic `eth_call`; use wallet preparation for the stricter token-return/signing gate. |
+| `readContract(address, data)` | Read-only call, no broadcast. |
+| `getSourceCode(address)` | Resolved explorer source, when available. |
+| `getTokenMetadata(address)` | Token metadata from chain. |
+| `getGasEstimate(to, data, from?, value?)` | `chainId`, `nativeCurrency`, `gasEstimate`, `gasPrice`, `estimatedCostWei`, `estimatedCostNative`. BOT estimates are not labeled OKB. |
+| `diffProtocolGraphs(addressA, addressB)` | Compare graph structure. |
 
-### `simulateTransaction(to: string, data: string, from?: string, value?: string): Promise<SimulationResult>`
-Dry-runs state-changing calls locally against the current block state using the simulator engine.
+`estimatedCostOKB` was removed; consumers must migrate to the explicit currency and exact decimal-string fields. Providers can fail or state can change; handle rejected promises as blocked preparation, never as permission to bypass checks.
 
-* **Parameters:**
-  * `to`: Target contract address.
-  * `data`: Transaction calldata.
-  * `from` (Optional): Address initiating the call.
-  * `value` (Optional): Ether/native value passed in wei.
-* **Returns:**
-  ```typescript
-  interface SimulationResult {
-    success: boolean;
-    gasUsed: string;
-    returnValue: string;
-    logs: any[];
-    error?: string;
-  }
-  ```
+## Configuration
 
-### `readContract(address: string, data: string): Promise<string>`
-Executes view or pure functions directly against on-chain state.
+Set `VER_NETWORK=botTestnet`, `BOT_TESTNET_RPC_URL=https://rpc.bohr.life`, and `VER_ENABLE_WRITES=false`. No wallet keys or deployer keys belong in this service. X Layer 196 remains explicitly selectable for compatibility, not as the BOT integration default.
 
-### `getSourceCode(address: string): Promise<string | null>`
-Helper to fetch fully resolved, unflattened Solidity source code for verified contracts from Blockscout.
-
-### `searchProtocol(address: string, query: string): Promise<SearchMatch[]>`
-Searches structural elements (roles, events, privileged functions) by a keyword query.
-
----
-
-## 4. Integration Examples
-
-### Example A: Wallet Transaction Safety Middleware
-Verify that an outgoing transaction does not trigger a privileged or dangerous role method:
-
-```typescript
-import { VerClient } from "aic-mcp";
-
-const client = new VerClient(undefined, 968);
-
-async function preSignCheck(targetContract: string, calldata: string) {
-  try {
-    const tx = await client.explainTransaction(targetContract, calldata);
-    
-    if (tx.classification === "privileged_admin" || tx.classification === "owner_only") {
-      console.warn(`[WARNING] Dangerous call: Function "${tx.function}" requires privileged roles.`);
-      console.warn(`Reason: ${tx.reason}`);
-      return false; // Suggest warning user
-    }
-    
-    console.log(`[SAFE] Function "${tx.function}" is classified as: ${tx.classification}`);
-    return true;
-  } catch (err) {
-    console.error("Safety check failed:", err);
-    return false;
-  }
-}
-```
-
-### Example B: Auto-indexing Protocol Roles & Owners
-Gather structural permissions configuration across multiple contracts:
-
-```typescript
-import { VerClient } from "aic-mcp";
-
-const client = new VerClient(undefined, 968);
-
-async function inspectPermissions(contracts: string[]) {
-  for (const address of contracts) {
-    const graph = await client.getProtocolGraph(address);
-    
-    console.log(`\n=== Permissions Map for ${graph.metadata.protocol_name} ===`);
-    console.log("Address:", address);
-    
-    console.log("Defined Roles:");
-    graph.structural.roles.forEach(role => {
-      console.log(`  - Role: ${role.name}`);
-    });
-    
-    console.log("Privileged Functions:");
-    graph.security.privileged_functions.forEach(func => {
-      console.log(`  - ${func.name}() classified as: ${func.classification}`);
-    });
-  }
-}
-```
+Graph attestations and wallet preparation are different checks. `registry.verified` is an active matching hash, not an audit. A missing attestation is not silently upgraded into trust by a high structural score. Wallet teams must decide whether their policy additionally requires an allowlisted token, matching registry attestation, or both.

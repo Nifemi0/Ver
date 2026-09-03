@@ -36,5 +36,7 @@ jobs:
           cache: npm
           cache-dependency-path: contracts/package-lock.json
       - run: npm ci
-      - run: npx hardhat compile
+      - run: npx hardhat build
+      - run: npx tsc --noEmit
       - run: npm test
+      - run: npm audit --audit-level=high

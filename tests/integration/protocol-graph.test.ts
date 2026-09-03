@@ -46,7 +46,7 @@ describe("Protocol Graph — integration", () => {
     it("returns a valid metadata block", () => {
       expect(graph.metadata.protocol_name).toBe(fx.name);
       expect(graph.metadata.compiler_version).toBe("0.8.20");
-      expect(graph.metadata.schema_version).toBe("1.0.0");
+      expect(graph.metadata.schema_version).toBe("1.1.0");
       expect(graph.metadata.cache_status).toBe("MISS");
     });
 

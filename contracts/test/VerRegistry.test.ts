@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { network } from "hardhat";
+const { ethers } = await network.create("hardhat");
 
 describe("VerRegistry", function () {
   it("authorizes, revokes, and blocks a revoked attester", async function () {
@@ -9,7 +10,7 @@ describe("VerRegistry", function () {
     expect(await registry.authorizedAttesters(attester.address)).to.equal(true);
     await registry.revokeAttester(attester.address);
     expect(await registry.authorizedAttesters(attester.address)).to.equal(false);
-    await expect(registry.connect(attester).attest(protocol.address, ethers.id("graph"), "ipfs://graph"))
+    await expect(registry.connect(attester).getFunction("attest")(protocol.address, ethers.id("graph"), "ipfs://graph"))
       .to.be.revertedWithCustomError(registry, "NotAuthorized");
   });
 
@@ -25,7 +26,7 @@ describe("VerRegistry", function () {
   it("restricts attester administration to the owner", async function () {
     const [, other] = await ethers.getSigners();
     const registry = await (await ethers.getContractFactory("VerRegistry")).deploy();
-    await expect(registry.connect(other).authorizeAttester(other.address)).to.be.revertedWithCustomError(registry, "NotOwner");
+    await expect(registry.connect(other).getFunction("authorizeAttester")(other.address)).to.be.revertedWithCustomError(registry, "NotOwner");
     await expect(registry.authorizeAttester(ethers.ZeroAddress)).to.be.revertedWith("Zero address");
   });
 });

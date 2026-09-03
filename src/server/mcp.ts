@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { VerClient } from "../sdk/client";
-import { lookupGraph, registerGraph } from "../chain/registry";
+import { VERSION } from "../version";
+
+function toolResult(value: any) {
+  const failed = Boolean(value?.error) || value?.signable === false || value?.status === "reverted" || value?.status === "failed";
+  return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }], ...(failed ? { isError: true } : {}) };
+}
 
 const client = new VerClient();
 const server = new McpServer({
   name: "aic-mcp",
-  version: "1.0.0"
+  version: VERSION
 });
 
 server.tool(
@@ -50,7 +55,7 @@ server.tool(
     async ({ address, calldata }) => {
         try {
             const exp = await client.explainTransaction(address, calldata);
-            return { content: [{ type: "text", text: JSON.stringify(exp, null, 2) }] };
+            return toolResult(exp);
         } catch (e: any) {
             return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
         }
@@ -64,7 +69,7 @@ server.tool(
     async ({ address, query }) => {
         try {
             const res = await client.searchProtocol(address, query);
-            return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+            return toolResult(res);
         } catch (e: any) {
             return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
         }
@@ -78,7 +83,7 @@ server.tool(
     async ({ to, data, from, value }) => {
         try {
             const res = await client.simulateTransaction(to, data, from, value);
-            return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+            return toolResult(res);
         } catch (e: any) {
             return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
         }
@@ -92,7 +97,7 @@ server.tool(
     async ({ address, data }) => {
         try {
             const res = await client.readContract(address, data);
-            return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+            return toolResult(res);
         } catch (e: any) {
             return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
         }
@@ -134,7 +139,7 @@ server.tool(
     async ({ address, topics, data }) => {
         try {
             const decoded = await client.decodeEventLog(address, topics, data);
-            return { content: [{ type: "text", text: JSON.stringify(decoded, null, 2) }] };
+            return toolResult(decoded);
         } catch (e: any) {
             return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
         }
@@ -143,12 +148,12 @@ server.tool(
 
 server.tool(
     "get_gas_estimate",
-    "Estimates transaction gas and calculates expected cost in OKB tokens",
+    "Estimates gas and returns exact wei costs and the selected chain's native currency (BOT on BOT Chain)",
     { to: z.string(), data: z.string(), from: z.string().optional(), value: z.string().optional() },
     async ({ to, data, from, value }) => {
         try {
             const estimate = await client.getGasEstimate(to, data, from, value);
-            return { content: [{ type: "text", text: JSON.stringify(estimate, null, 2) }] };
+            return toolResult(estimate);
         } catch (e: any) {
             return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
         }
@@ -171,17 +176,17 @@ server.tool(
 
 server.tool(
     "compile_agent_intent",
-    "Translates a natural language intent into verified, simulated, and safe calldata for BOT Chain contracts",
+    "Prepares one exact ERC-20 approval or transfer on BOT Chain; returns unsigned calldata gated by simulation, never a safety guarantee",
     {
         address: z.string().describe("The target contract address (0x...)"),
-        intent: z.string().describe("The natural language description of the transaction intent (e.g. 'deposit 5 OKB', 'approve 20 USDC')"),
+        intent: z.string().min(1).max(1000).describe("One complete action: 'approve 1 PRWA to 0x...' or 'transfer 1 PRWA to 0x...'. Symbol must match the target; conditions, negations, compound actions and AI-generated signing payloads are not supported."),
         sender: z.string().optional().describe("Optional: The sender address (0x...) for eth_call simulation"),
         value: z.string().optional().describe("Optional: The value to send in wei (as string)")
     },
     async ({ address, intent, sender, value }) => {
         try {
             const result = await client.compileAgentIntent(address, intent, sender, value);
-            return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+            return toolResult(result);
         } catch (e: any) {
             return { content: [{ type: "text", text: JSON.stringify({ error: e.message }) }], isError: true };
         }

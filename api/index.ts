@@ -7,9 +7,20 @@ import { VerClient } from "../src/sdk/client";
 import { MermaidExporter } from "../src/engine/export/mermaid";
 import { getChainById } from "../src/chain/networks";
 import { z } from "zod";
+import { VERSION } from "../src/version";
 
 const app = express();
-app.set("trust proxy", 1);
+// Only Vercel's known edge topology is trusted by default. Direct servers ignore XFF.
+app.set("trust proxy", process.env.VERCEL ? 1 : false);
+class RequestError extends Error {}
+function failure(res: express.Response, status: number, code: string, error: string, details?: unknown) {
+    return res.status(status).json({ success: false, signable: false, simulationStatus: "skipped", risk: "blocked", blockingReasons: [code], error, ...(details ? { details } : {}) });
+}
+function routeFailure(res: express.Response, error: unknown, fallback: string) {
+    if (error instanceof RequestError) return failure(res, 400, "INVALID_CHAIN", error.message);
+    console.error("[API] request failed", error);
+    return failure(res, 503, "PREPARATION_UNAVAILABLE", fallback);
+}
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "").split(",").map(x => x.trim()).filter(Boolean);
 app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
 
@@ -36,7 +47,7 @@ app.get("/swagger.json", (req, res) => {
         const fileContent = fs.readFileSync(filePath, "utf8");
         return res.setHeader("Content-Type", "application/json").send(fileContent);
     } catch (err: any) {
-        return res.status(500).json({ error: "Failed to load API spec: " + err.message });
+        return failure(res, 500, "SPEC_UNAVAILABLE", "API specification unavailable");
     }
 });
 
@@ -51,8 +62,8 @@ const WalletPrepareSchema = z.object({
 function getClient(req: express.Request, requestedChainId?: number): VerClient {
     const rawChainId = requestedChainId ?? req.query?.chainId ?? req.body?.chainId ?? req.body?.arguments?.chainId ?? req.body?.params?.chainId;
     const chainId = rawChainId === undefined ? 968 : Number(rawChainId);
-    if (!Number.isInteger(chainId)) throw new Error("chainId must be an integer");
-    getChainById(chainId);
+    if ((rawChainId !== undefined && !["number", "string"].includes(typeof rawChainId)) || !Number.isInteger(chainId)) throw new RequestError("chainId must be an integer");
+    try { getChainById(chainId); } catch { throw new RequestError("Unsupported chainId. Use 968 (BOT Chain) or 196 (compatibility)."); }
     let client = clients.get(chainId);
     if (!client) {
         client = new VerClient(undefined, chainId);
@@ -67,6 +78,7 @@ app.get(["/health", "/api/health"], (_req, res) => {
         ok: true,
         service: "ver-protocol",
         package: "aic-mcp",
+        version: VERSION,
         primaryChainId: 968,
         supportedChains: [968, 196],
         time: new Date().toISOString(),
@@ -86,8 +98,8 @@ const rateLimiter = (req: express.Request, res: express.Response, next: express.
     
     if (!clientLimit) {
         if (ipCache.size >= MAX_TRACKED_IPS) {
-            const oldest = ipCache.keys().next().value;
-            if (oldest) ipCache.delete(oldest);
+            for (const [key, limit] of ipCache) if (now - limit.lastReset >= WINDOW) ipCache.delete(key);
+            if (ipCache.size >= MAX_TRACKED_IPS) return failure(res, 503, "RATE_LIMIT_CAPACITY", "Please retry later.");
         }
         ipCache.set(ip, { count: 1, lastReset: now });
         return next();
@@ -99,7 +111,8 @@ const rateLimiter = (req: express.Request, res: express.Response, next: express.
     }
     
     if (clientLimit.count >= LIMIT) {
-        return res.status(429).json({ error: "Too many requests. Please try again later." });
+        res.setHeader("Retry-After", Math.max(1, Math.ceil((WINDOW - (now - clientLimit.lastReset)) / 1000)));
+        return failure(res, 429, "RATE_LIMITED", "Too many requests. Please try again later.");
     }
     
     clientLimit.count += 1;
@@ -110,7 +123,7 @@ const handler = async (req: express.Request, res: express.Response) => {
     try {
         let address = (req.query.address || req.body?.address || req.body?.arguments?.address || req.body?.params?.address) as string;
         if (!address || !isAddress(address)) {
-            return res.status(400).json({ error: "A valid contract address is required" });
+            return failure(res, 400, "INVALID_ADDRESS", "A valid contract address is required");
         }
         const graph = await getClient(req).getProtocolGraph(address);
         const mermaid = MermaidExporter.generate(graph);
@@ -129,8 +142,7 @@ const handler = async (req: express.Request, res: express.Response) => {
             trace
         });
     } catch (e: any) {
-        console.error("[API] compile failed", e);
-        return res.status(500).json({ error: "Protocol compilation failed" });
+        return routeFailure(res, e, "Protocol compilation unavailable");
     }
 };
 
@@ -152,37 +164,36 @@ app.post("/api/compile-intent", rateLimiter, async (req, res) => {
         let intent = (req.body?.intent || req.body?.arguments?.intent || req.body?.params?.intent || req.query.intent) as string;
         let sender = (req.body?.sender || req.body?.arguments?.sender || req.body?.params?.sender || req.query.sender) as string | undefined;
         if (!contractAddress || !isAddress(contractAddress)) {
-            return res.status(400).json({ error: "A valid contractAddress is required" });
+            return failure(res, 400, "INVALID_ADDRESS", "A valid contractAddress is required");
         }
-        if (!intent || typeof intent !== "string") {
-            return res.status(400).json({ error: "A non-empty intent is required" });
+        if (typeof intent !== "string" || !intent.trim()) {
+            return failure(res, 400, "INVALID_INTENT", "A non-empty intent is required");
         }
         if (intent.trim().length > 1000) {
-            return res.status(400).json({ error: "Intent must be 1000 characters or fewer" });
+            return failure(res, 400, "INVALID_INTENT", "Intent must be 1000 characters or fewer");
         }
         if (sender && !isAddress(sender)) {
-            return res.status(400).json({ error: "A valid sender is required" });
+            return failure(res, 400, "INVALID_SENDER", "A valid sender is required");
         }
         
         const result = await getClient(req).compileAgentIntent(contractAddress, intent, sender);
-        return res.status(result.signable === false ? 422 : 200).json(result);
+        return res.status(result.signable === true ? 200 : 422).json(result);
     } catch (e: any) {
-        console.error("[API] intent compilation failed", e);
-        return res.status(500).json({ error: "Intent compilation failed" });
+        return routeFailure(res, e, "Intent compilation unavailable");
     }
 });
 
 app.post("/api/wallet/prepare", rateLimiter, async (req, res) => {
     const parsed = WalletPrepareSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: "Invalid wallet request", details: parsed.error.flatten() });
+    if (!parsed.success) return failure(res, 400, "INVALID_REQUEST", "Invalid wallet request", parsed.error.flatten());
     try {
         const { chainId, contractAddress, intent, sender, value } = parsed.data;
         const result = await getClient(req, chainId)
             .compileAgentIntent(contractAddress, intent, sender, value);
-        return res.status(result.signable ? 200 : 422).json(result);
+        return res.status(result.signable === true ? 200 : 422).json(result);
     } catch (e: any) {
         console.error("[API] wallet preparation failed", e);
-        return res.status(422).json({ error: "Wallet preparation failed" });
+        return failure(res, 422, "PREPARATION_FAILED", "Wallet preparation failed");
     }
 });
 
@@ -194,24 +205,30 @@ app.get("/api/compile-intent", rateLimiter, async (req, res) => {
         let sender = req.query.sender as string | undefined;
         
         if (!contractAddress || !isAddress(contractAddress)) {
-            return res.status(400).json({ error: "A valid contractAddress is required" });
+            return failure(res, 400, "INVALID_ADDRESS", "A valid contractAddress is required");
         }
-        if (!intent || typeof intent !== "string") {
-            return res.status(400).json({ error: "A non-empty intent is required" });
+        if (typeof intent !== "string" || !intent.trim()) {
+            return failure(res, 400, "INVALID_INTENT", "A non-empty intent is required");
         }
         if (intent.trim().length > 1000) {
-            return res.status(400).json({ error: "Intent must be 1000 characters or fewer" });
+            return failure(res, 400, "INVALID_INTENT", "Intent must be 1000 characters or fewer");
         }
         if (sender && !isAddress(sender)) {
-            return res.status(400).json({ error: "A valid sender is required" });
+            return failure(res, 400, "INVALID_SENDER", "A valid sender is required");
         }
         
         const result = await getClient(req).compileAgentIntent(contractAddress, intent, sender);
-        return res.status(result.signable === false ? 422 : 200).json(result);
+        return res.status(result.signable === true ? 200 : 422).json(result);
     } catch (e: any) {
-        console.error("[API] intent compilation failed", e);
-        return res.status(500).json({ error: "Intent compilation failed" });
+        return routeFailure(res, e, "Intent compilation unavailable");
     }
+});
+
+app.use((_req, res) => { failure(res, 404, "NOT_FOUND", "Route not found"); });
+app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (error.type === "entity.too.large") return failure(res, 413, "BODY_TOO_LARGE", "Request body exceeds 1MB");
+    if (error.type === "entity.parse.failed") return failure(res, 400, "INVALID_JSON", "Malformed JSON request");
+    return failure(res, 500, "INTERNAL_ERROR", "Request failed");
 });
 
 export default app;

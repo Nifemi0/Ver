@@ -3,7 +3,7 @@
   "info": {
     "title": "Ver Protocol Compiler API",
     "description": "Deterministic BOT Chain protocol compiler and wallet-safety API. Compiles smart contracts into Protocol Graphs and maps natural-language intent to ABI-verified, simulated EVM calldata.",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "contact": { "name": "Ver Protocol", "url": "https://verprotocol.vercel.app" }
   },
   "servers": [{ "url": "https://verprotocol.vercel.app" }],
@@ -55,7 +55,7 @@
     "/api/compile-intent": {
       "post": {
         "summary": "Map natural-language intent to ABI-verified EVM calldata",
-        "description": "Parses an intent like 'Transfer 10 USDT to 0x...' against the contract ABI and returns the encoded calldata. When a sender is provided, the calldata is additionally simulated with eth_call.",
+        "description": "Accepts one complete approve AMOUNT SYMBOL to ADDRESS or transfer AMOUNT SYMBOL to ADDRESS request. No conditions, negations, compound actions or AI fallback. Symbol and exact token units must match the target. Sender simulation and valid token return data are required for signability.",
         "operationId": "compileIntent",
         "requestBody": {
           "required": true,
@@ -76,7 +76,7 @@
         },
         "responses": {
           "200": {
-            "description": "Compiled intent with encoded calldata; signability is separately reported",
+            "description": "Simulation passed; unsigned preparation still requires independent wallet validation and user confirmation",
             "content": {
               "application/json": {
                 "schema": {
@@ -86,7 +86,12 @@
                     "functionName": { "type": "string" },
                     "args": { "type": "array" },
                     "encodedCalldata": { "type": "string" },
-                    "simulationStatus": { "enum": ["success", "reverted", "skipped"] }
+                    "simulationStatus": { "enum": ["success", "reverted", "skipped", "failed", "unavailable"] },
+                    "signable": { "type": "boolean" },
+                    "blockingReasons": { "type": "array", "items": { "type": "string" } },
+                    "sender": { "type": "string" },
+                    "preparedAt": { "type": "string", "format": "date-time" },
+                    "expiresAt": { "type": "string", "format": "date-time" }
                   }
                 }
               }
@@ -94,13 +99,15 @@
           },
           "422": { "description": "Intent compiled but cannot be signed or was blocked" },
           "429": { "description": "Rate limited" },
-          "500": { "description": "Intent compile error" }
+          "400": { "description": "Invalid request" },
+          "503": { "description": "Preparation dependency unavailable" }
         }
       }
     },
     "/api/wallet/prepare": {
       "post": {
         "summary": "Prepare and simulate an unsigned wallet transaction",
+        "description": "Deterministic single ERC-20 approval/transfer only. Requires matching token symbol, exact precision and a successful sender simulation including valid token return data. A signable result is not an audit or execution guarantee. Wallet must check active account/chain, decoded calldata, expiry, and get explicit user confirmation.",
         "operationId": "prepareWalletTransaction",
         "requestBody": {
           "required": true,
@@ -118,10 +125,49 @@
           } } }
         },
         "responses": {
-          "200": { "description": "Simulation succeeded; unsigned transaction is signable after user confirmation" },
-          "400": { "description": "Invalid request" },
-          "422": { "description": "ABI, bytecode, amount, or simulation blocked preparation" },
-          "429": { "description": "Rate limited" }
+          "200": { "description": "Simulation succeeded; wallet checks and user confirmation still required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PreparedTransaction" } } } },
+          "400": { "$ref": "#/components/responses/Blocked" },
+          "413": { "$ref": "#/components/responses/Blocked" },
+          "422": { "description": "Preparation blocked; inspect signable and blockingReasons, never success alone", "content": { "application/json": { "schema": { "type": "object", "required": ["signable", "blockingReasons"], "properties": { "signable": { "type": "boolean", "enum": [false] }, "blockingReasons": { "type": "array", "items": { "type": "string" } }, "simulationStatus": { "type": "string", "enum": ["skipped", "reverted", "failed", "unavailable"] } } } } } },
+          "429": { "$ref": "#/components/responses/Blocked" },
+          "503": { "$ref": "#/components/responses/Blocked" }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "Blocked": { "description": "Invalid, oversized, rate-limited or unavailable request; non-signable JSON. Rate limits include Retry-After seconds.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BlockedError" } } } }
+    },
+    "schemas": {
+      "BlockedError": {
+        "type": "object", "required": ["success", "signable", "risk", "blockingReasons", "error"],
+        "properties": {
+          "success": { "type": "boolean", "enum": [false] },
+          "signable": { "type": "boolean", "enum": [false] },
+          "risk": { "type": "string", "enum": ["blocked"] },
+          "simulationStatus": { "type": "string", "enum": ["skipped"] },
+          "blockingReasons": { "type": "array", "items": { "type": "string" } },
+          "error": { "type": "string" }
+        }
+      },
+      "PreparedTransaction": {
+        "type": "object", "required": ["success", "signable", "simulationStatus", "risk", "blockingReasons", "chainId", "sender", "preparedAt", "expiresAt", "requiresUserConfirmation", "transaction"],
+        "properties": {
+          "success": { "type": "boolean", "enum": [true] },
+          "signable": { "type": "boolean", "enum": [true] },
+          "simulationStatus": { "type": "string", "enum": ["success"] },
+          "risk": { "type": "string", "enum": ["review"] },
+          "blockingReasons": { "type": "array", "maxItems": 0, "items": { "type": "string" } },
+          "chainId": { "type": "integer", "enum": [968, 196] },
+          "sender": { "type": "string" },
+          "preparedAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time", "description": "60-second preparation lifetime; wallet must discard expired results." },
+          "requiresUserConfirmation": { "type": "boolean", "enum": [true] },
+          "transaction": {
+            "type": "object", "required": ["chainId", "from", "to", "data", "value"],
+            "properties": { "chainId": { "type": "integer", "enum": [968, 196] }, "from": { "type": "string" }, "to": { "type": "string" }, "data": { "type": "string", "pattern": "^0x[0-9a-fA-F]+$" }, "value": { "type": "string", "pattern": "^0+$" } }
+          }
         }
       }
     }

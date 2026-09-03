@@ -51,10 +51,16 @@ describe("VerClient New MCP Features", () => {
       fetchCompilerVersion: vi.fn().mockResolvedValue("0.8.20")
     };
     const client = new VerClient(mockLlm, 968, mockRepo);
+    vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi, sourceCode: "contract TestToken {}" });
+    (client as any).client = {
+      getChainId: vi.fn().mockResolvedValue(968),
+      getBytecode: vi.fn().mockResolvedValue("0x6000"),
+      readContract: vi.fn().mockImplementation(({ functionName }) => Promise.resolve(functionName === "symbol" ? "PRWA" : 6)),
+    };
     const USDT = "0x922835859623d6F3b99a2742D585E093bBA0a740";
     const result = await client.compileAgentIntent(
       USDT,
-      "Transfer 1.5 USDT to Alice"
+      "Transfer 1.5 PRWA to 0x1111111111111111111111111111111111111111"
     );
     
     expect(result.success).toBe(true);
@@ -62,5 +68,7 @@ describe("VerClient New MCP Features", () => {
     expect(result.args[1]).toBe("1500000"); // 1.5 * 10^6
     expect(result.encodedCalldata).toBeDefined();
     expect(result.simulationStatus).toBeDefined();
+    expect(result.signable).toBe(false);
+    expect(mockLlm.generate).not.toHaveBeenCalled();
   });
 });

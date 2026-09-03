@@ -105,12 +105,12 @@ describe('VerCache', () => {
     expect(cache.getMetrics().corrupted).toBe(1);
   });
 
-  it('should reject version mismatch', () => {
+  it.each(['0.9.0', '1.0.0'])('should reject obsolete schema %s', obsoleteVersion => {
     const graph = getMockGraph();
     cache.set("0x123", graph);
 
     const db = cache._getDbForTesting();
-    db.prepare("UPDATE protocol_graphs SET schema_version = ?").run("0.9.0");
+    db.prepare("UPDATE protocol_graphs SET schema_version = ?").run(obsoleteVersion);
 
     expect(cache.get("0x123")).toBeNull();
     expect(cache.getMetrics().expired).toBe(1); // Treated as expired

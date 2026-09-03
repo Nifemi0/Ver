@@ -14,12 +14,12 @@ export interface NormalizedContractData {
 
 export class DataNormalizer {
   private repository: IExplorerRepository;
-  private client = createPublicClient({ chain: getActiveChain(), transport: http() });
+  private client = createPublicClient({ chain: getActiveChain(), transport: http(undefined, { timeout: 10000, retryCount: 1 }) });
 
   // Dependency Inversion: Compiler doesn't know about Blockscout
   constructor(repository: IExplorerRepository, chain = getActiveChain()) {
     this.repository = repository;
-    this.client = createPublicClient({ chain, transport: http() });
+    this.client = createPublicClient({ chain, transport: http(undefined, { timeout: 10000, retryCount: 1 }) });
   }
 
   /**
@@ -46,7 +46,7 @@ export class DataNormalizer {
                 const extractedAddress = "0x" + slotData.slice(26); // slice off the '0x' + 24 zeros
                 isProxy = true;
                 implementationAddress = extractedAddress;
-                console.log(`[Normalizer] EIP-1967 Proxy detected via raw storage slot! Implementation: ${extractedAddress}`);
+                console.error(`[Normalizer] EIP-1967 Proxy detected via raw storage slot! Implementation: ${extractedAddress}`);
             } else {
                 // Try Beacon Slot: bytes32(uint256(keccak256('eip1967.proxy.beacon')) - 1)
                 const BEACON_SLOT = "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50";
@@ -64,7 +64,7 @@ export class DataNormalizer {
                     });
                     isProxy = true;
                     implementationAddress = implData as string;
-                    console.log(`[Normalizer] EIP-1967 Beacon Proxy detected! Beacon: ${beaconAddress}, Implementation: ${implementationAddress}`);
+                    console.error(`[Normalizer] EIP-1967 Beacon Proxy detected! Beacon: ${beaconAddress}, Implementation: ${implementationAddress}`);
                 }
             }
         } catch (e) {
@@ -82,7 +82,7 @@ export class DataNormalizer {
                 const extractedAddress = "0x" + bytecode.slice(22, 62);
                 isProxy = true;
                 implementationAddress = extractedAddress;
-                console.log(`[Normalizer] EIP-1167 Minimal Clone detected! Implementation: ${extractedAddress}`);
+                console.error(`[Normalizer] EIP-1167 Minimal Clone detected! Implementation: ${extractedAddress}`);
             }
         } catch (e) {
             // Ignore bytecode read failures
@@ -132,7 +132,7 @@ export class DataNormalizer {
                     if (implAddress && implAddress !== "0x0000000000000000000000000000000000000000") {
                         isProxy = true;
                         implementationAddress = implAddress as string;
-                        console.log(`[Normalizer] Proxy detected via ABI inspection & on-chain implementation() call! Implementation: ${implAddress}`);
+                        console.error(`[Normalizer] Proxy detected via ABI inspection & on-chain implementation() call! Implementation: ${implAddress}`);
                     }
                 }
             }
@@ -158,7 +158,7 @@ export class DataNormalizer {
             if (facetsArray && facetsArray.length > 0) {
                 isProxy = true;
                 implementationAddress = "DiamondProxy";
-                console.log(`[Normalizer] Detected Diamond Proxy with ${facetsArray.length} facets.`);
+                console.error(`[Normalizer] Detected Diamond Proxy with ${facetsArray.length} facets.`);
                 
                 // Fetch ABIs for all facets in parallel
                 const facetData = await Promise.all(
@@ -218,7 +218,7 @@ export class DataNormalizer {
     }
 
     if (isProxy && implementationAddress && implementationAddress !== "DiamondProxy") {
-        console.log(`[Normalizer] Fetching and merging proxy (${address}) and implementation (${implementationAddress}) ABIs...`);
+        console.error(`[Normalizer] Fetching and merging proxy (${address}) and implementation (${implementationAddress}) ABIs...`);
         const [proxyAbiRaw, implAbiRaw, proxySourceRaw, implSourceRaw] = await Promise.all([
             this.repository.fetchContractAbi(address),
             this.repository.fetchContractAbi(implementationAddress),
@@ -289,16 +289,16 @@ export class DataNormalizer {
                     combined += `// File: ${filePath}\n${content.content}\n\n`;
                 }
                 sourceCode = combined;
-                console.log(`[Normalizer] Successfully unflattened ${Object.keys(parsed.sources).length} files from JSON source.`);
+                console.error(`[Normalizer] Successfully unflattened ${Object.keys(parsed.sources).length} files from JSON source.`);
             }
         } catch (e) {
-            console.log(`[Normalizer] JSON parsing failed for source code, keeping as text.`);
+            console.error(`[Normalizer] JSON parsing failed for source code, keeping as text.`);
         }
     }
 
     // Fallback for unverified contracts (Decompilation Pipeline)
     if (!abi || abi === "[]") {
-        console.log(`[Normalizer] Contract unverified. Falling back to bytecode decompilation...`);
+        console.error(`[Normalizer] Contract unverified. Falling back to bytecode decompilation...`);
         const { BytecodeDecompiler } = await import("./bytecode.js");
         const decompiler = new BytecodeDecompiler();
         const pseudoAbi = await decompiler.generatePseudoAbi(targetAddress);

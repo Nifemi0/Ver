@@ -153,7 +153,7 @@
             <div>
                 <h4 class="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-3">Integrations</h4>
                 <ul class="flex flex-col gap-2 text-sm text-slate-300">
-                    <li><a href="#aic" class="hover:text-copper-400 transition-colors">Agentic Intent Compiler</a></li>
+                    <li><a href="#aic" class="hover:text-copper-400 transition-colors">Wallet integration</a></li>
                     <li><a href="#mcp-setup" class="hover:text-copper-400 transition-colors">MCP Integration</a></li>
                 </ul>
             </div>
@@ -177,7 +177,7 @@
                 <strong>Ver</strong> is BOT Chain's deterministic semantic and wallet-safety layer. It exposes verified contract structure to wallets and AI systems while replacing guessed transaction data with simulation-gated calldata.
             </p>
             <p>
-                Protocol Graphs give agents consistent, machine-readable structure instead of raw ABIs.
+                Protocol Graphs give wallets and developer tools consistent contract context. Ver never needs the user's signing key.
             </p>
         </section>
 
@@ -201,12 +201,12 @@
         </section>
 
         <section id="aic">
-            <h2>Agentic Intent Compiler (AIC)</h2>
+            <h2>Wallet integration</h2>
             <p>
-                The <strong>Agentic Intent Compiler</strong> (AIC) is a middleware service that maps natural language intents directly to deterministic EVM calldata.
+                The wallet preparation endpoint accepts a single complete <code>approve AMOUNT SYMBOL to ADDRESS</code> or <code>transfer AMOUNT SYMBOL to ADDRESS</code> request. No conditions, compound instructions or AI signing fallback are supported.
             </p>
             <p>
-                AIC resolves a verified BOT Chain ABI, encodes exact integer values, and simulates the transaction with <code>eth_call</code>. Reverted or unverified transactions are returned as non-signable.
+                Ver resolves a verified BOT Chain ABI, validates the symbol and exact token precision, and simulates from the supplied sender with <code>eth_call</code>. Reverts, token false returns, malformed output and provider failures are non-signable. The legacy SDK method is named <code>compileAgentIntent</code>; the wallet should call HTTP.
             </p>
             <h3>Usage Endpoint</h3>
             <pre><code>POST https://verprotocol.vercel.app/api/wallet/prepare
@@ -218,7 +218,7 @@
   "intent": "Approve 1 PRWA to 0x2222222222222222222222222222222222222222"
 }</code></pre>
             <p>
-                The endpoint returns the EVM calldata alongside the simulation status:
+                Illustrative response excerpt (not a transaction to sign). Actual responses include full addresses, calldata, sender binding and a 60-second expiry:
             </p>
             <pre><code>{
   "signable": true,
@@ -226,6 +226,8 @@
   "risk": "review",
   "transaction": { "chainId": 968, "to": "0x9228...", "data": "0x095e...", "value": "0" }
 }</code></pre>
+            <p>Require <code>signable === true</code> and <code>simulationStatus === "success"</code>, matching chain/account, an unexpired <code>expiresAt</code>, and independently verified target and decoded arguments. Re-simulate in the wallet, obtain user confirmation, then sign and broadcast locally. Simulation does not guarantee safety or future execution.</p>
+            <p>All malformed responses, timeouts and non-200 preparation responses block signing. HTTP 400 means invalid input, 413 oversized body, 422 blocked preparation, 429 rate-limited, and 503 unavailable. See the <a href="/swagger.json">OpenAPI contract</a> and repository <a href="https://github.com/Nifemi0/Ver/blob/main/docs/WALLET_TEAM_HANDOFF.md">wallet-team handoff</a>. Release-candidate documentation is not proof that the hosted API has been updated.</p>
         </section>
 
         <section id="mcp-setup">

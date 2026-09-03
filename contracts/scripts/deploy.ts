@@ -1,14 +1,23 @@
-import { ethers } from "hardhat";
+import { network } from "hardhat";
+import { fileURLToPath } from "node:url";
 import * as fs from "fs";
 import * as path from "path";
 
 async function main() {
-  const networkName = require("hardhat").network.name;
+  if (process.env.VER_ENABLE_DEPLOYMENT !== "true") throw new Error("Deployment disabled. Explicit approval and VER_ENABLE_DEPLOYMENT=true are required.");
+  const connection = await network.create();
+  const { ethers } = connection;
+  const networkName = connection.networkName;
+  const actualChainId = (await ethers.provider.getNetwork()).chainId.toString();
+  if (process.env.VER_DEPLOYMENT_CONFIRM_CHAIN_ID !== actualChainId) throw new Error("Confirm the exact target chain with VER_DEPLOYMENT_CONFIRM_CHAIN_ID before deployment.");
+  const contractName = process.env.VER_REGISTRY_CONTRACT;
+  if (contractName !== "VerRegistry" && contractName !== "VerRegistryV3") throw new Error("Explicitly select VER_REGISTRY_CONTRACT=VerRegistry or VerRegistryV3.");
   const [deployer] = await ethers.getSigners();
+  if (!deployer) throw new Error("No deployment signer configured for the selected network.");
   console.log("Deploying with:", deployer.address);
   console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), networkName === "botTestnet" ? "BOT" : "OKB");
 
-  const Registry = await ethers.getContractFactory("VerRegistry");
+  const Registry = await ethers.getContractFactory(contractName);
   const registry = await Registry.deploy();
   await registry.waitForDeployment();
   const addr = await registry.getAddress();
@@ -25,10 +34,11 @@ async function main() {
   // metadata when run against BOT Chain testnet.
   const deploymentData = {
       network: networkName === "botTestnet" ? "BOT Chain Testnet" : networkName,
-      version: networkName === "botTestnet" ? 2 : 1,
+      contract: contractName,
+      version: contractName === "VerRegistryV3" ? 3 : 2,
       chainId: (await ethers.provider.getNetwork()).chainId.toString(),
-      rpc: networkName === "botTestnet" ? "https://rpc.bohr.life" : "https://rpc.xlayer.tech",
-      explorer: networkName === "botTestnet" ? "https://scan.bohr.life" : "https://web3.okx.com/explorer/xlayer",
+      rpc: networkName === "botTestnet" ? (process.env.BOT_TESTNET_RPC_URL ?? "https://rpc.bohr.life") : networkName === "xlayer" ? (process.env.XLAYER_RPC_URL ?? "https://rpc.xlayer.tech") : networkName === "xlayerTestnet" ? (process.env.XLAYER_TESTNET_RPC_URL ?? "https://testrpc.xlayer.tech") : null,
+      explorer: networkName === "botTestnet" ? "https://scan.bohr.life" : networkName === "xlayer" ? "https://web3.okx.com/explorer/xlayer" : null,
       deployer: deployer.address,
       address: addr,
       transactionHash: txHash,
@@ -38,12 +48,12 @@ async function main() {
       timestamp: new Date().toISOString()
   };
   
-  const deploymentsDir = path.join(__dirname, "../../deployments");
+  const deploymentsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../deployments");
   if (!fs.existsSync(deploymentsDir)) {
       fs.mkdirSync(deploymentsDir, { recursive: true });
   }
   
-  const fileName = networkName === 'xlayer' ? 'mainnet.json' : `${networkName}.json`;
+  const fileName = `${networkName}-${contractName}-${addr}.json`;
   
   fs.writeFileSync(
       path.join(deploymentsDir, fileName),
