@@ -1,4 +1,6 @@
-import { VerCache } from "../engine/cache";
+import { VerCache, CURRENT_SCHEMA_VERSION } from "../engine/cache";
+import { serializeAbiValue } from "../engine/serialize";
+import { abiSignature } from "../engine/abi";
 import { SemanticCache } from "../engine/enrichment/semantic.cache";
 import { BlockscoutRepository } from "../engine/explorer/blockscout.repository";
 import { XLayerExplorerRepository } from "../engine/explorer/xlayer.repository";
@@ -7,7 +9,7 @@ import { DataNormalizer } from "../engine/explorer/normalizer";
 import { CompilerPipeline } from "../engine/compiler/pipeline";
 import { SemanticEnricher, ILLMProvider } from "../engine/enrichment/enricher";
 import { VerSchema } from "../types/schema";
-import { decodeFunctionData, decodeFunctionResult, encodeFunctionData, createPublicClient, http, Address, parseAbi, parseUnits, formatUnits, isAddress } from "viem";
+import { decodeFunctionData, decodeFunctionResult, encodeFunctionData, createPublicClient, http, Address, parseAbi, parseUnits, formatUnits, isAddress, toFunctionSelector } from "viem";
 import { GenericLLMProvider } from "../engine/enrichment/llm.provider";
 import { getChainById, getExplorerApiUrlForChain, getExplorerUrlForChain } from "../chain/networks";
 import { getRegistryAddressForChain, lookupGraph } from "../chain/registry";
@@ -27,7 +29,7 @@ export class VerClient {
 
   constructor(llmProvider?: ILLMProvider, chainId?: number, explorerRepository?: IExplorerRepository) {
     this.chain = getChainById(chainId);
-    this.cacheKeyPrefix = `graph-1.1.0:${this.chain.id}:`;
+    this.cacheKeyPrefix = `graph-${CURRENT_SCHEMA_VERSION}:${this.chain.id}:`;
     this.client = createPublicClient({ chain: this.chain, transport: http(undefined, { timeout: 10000, retryCount: 1 }) });
     this.cache = new VerCache();
     this.semanticCache = new SemanticCache();
@@ -42,6 +44,7 @@ export class VerClient {
   }
 
   public async getProtocolGraph(address: string, forceRefresh = false): Promise<VerSchema> {
+    if (!isAddress(address)) throw new Error("Invalid contract address");
     const cacheKey = `${this.cacheKeyPrefix}${address.toLowerCase()}`;
     let graph = this.cache.get(cacheKey);
 
@@ -53,6 +56,9 @@ export class VerClient {
             source: normalized.sourceCode,
             isProxy: normalized.isProxy,
             implementation: normalized.implementationAddress,
+            chainId: this.chain.id,
+            sourceVerified: normalized.sourceVerified,
+            facets: normalized.facets,
             metadata: {
                 protocolName: normalized.contractName || "Unknown",
                 compilerVersion: normalized.compilerVersion || "Unknown"
@@ -64,31 +70,40 @@ export class VerClient {
         };
         const { graph: compiledGraph } = await this.compiler.compile(input);
         graph = compiledGraph;
-        graph.registry!.registryAddress = getRegistryAddressForChain(this.chain.id);
-        if (process.env.VER_REGISTRY_LOOKUP !== "false") {
-          try {
-            const attestation = await lookupGraph(address, this.chain.id);
-            if (attestation) {
-              const activeHash = attestation.graphHash.toLowerCase();
-              const compiledHash = graph.registry!.graphHash.toLowerCase();
-              graph.registry = {
-                registered: activeHash !== `0x${"0".repeat(64)}`,
-                graphHash: graph.registry!.graphHash,
-                deploymentNetwork: graph.registry!.deploymentNetwork,
-                verified: attestation.verified && activeHash === compiledHash,
-                metadataURI: attestation.metadataURI,
-                registryAddress: attestation.registryAddress,
-              };
-            }
-          } catch (error) {
-            console.warn("[Registry] Attestation lookup unavailable; continuing with local graph hash", error);
-          }
-        }
         this.cache.set(cacheKey, graph);
     }
 
+    // Mutable authorization must never inherit the structural graph's cache TTL.
+    // Work on a copy so overlapping callers cannot mutate one another's response.
+    graph = structuredClone(graph);
+    graph.registry = {
+      ...graph.registry!, registered: false, verified: false, metadataURI: "",
+      registryAddress: getRegistryAddressForChain(this.chain.id),
+      lookupStatus: process.env.VER_REGISTRY_LOOKUP === "false" ? "disabled" : "unavailable",
+    };
+    if (process.env.VER_REGISTRY_LOOKUP !== "false") {
+      try {
+        const attestation = await lookupGraph(address, this.chain.id);
+        graph.registry.checkedAt = new Date().toISOString();
+        if (attestation) {
+          const activeHash = attestation.graphHash.toLowerCase();
+          graph.registry = {
+            ...graph.registry,
+            registered: activeHash !== `0x${"0".repeat(64)}`,
+            verified: attestation.verified && activeHash === graph.registry.graphHash.toLowerCase(),
+            metadataURI: attestation.metadataURI,
+            registryAddress: attestation.registryAddress,
+            lookupStatus: "checked",
+          };
+        }
+      } catch (error) {
+        graph.registry.checkedAt = new Date().toISOString();
+        console.warn("[Registry] Attestation lookup unavailable", error);
+      }
+    }
     const promptVersion = this.enricher.promptVersion;
-    const cachedSemantic = this.semanticCache.get(cacheKey, promptVersion);
+    const semanticKey = `${cacheKey}:${graph.registry.graphHash}`;
+    const cachedSemantic = this.semanticCache.get(semanticKey, promptVersion);
 
     if (cachedSemantic) {
         graph.semantic = cachedSemantic.semantic;
@@ -99,7 +114,7 @@ export class VerClient {
         const { graph: enrichedGraph, diagnostics } = await this.enricher.enrich(graph);
         graph = enrichedGraph;
         if (diagnostics.status === "COMPLETE") {
-            this.semanticCache.set(cacheKey, promptVersion, {
+            this.semanticCache.set(semanticKey, promptVersion, {
                 semantic: graph.semantic,
                 security: graph.security,
                 developer: graph.developer
@@ -133,17 +148,16 @@ export class VerClient {
 
       try {
          const decoded = decodeFunctionData({ abi, data: calldata as any });
-         const funcInfo = graph.security.privileged_functions.find(f => f.name === decoded.functionName) 
-            || { classification: "public mutator", reason: "Standard public call" };
-
-         const serializeArgs = (args: readonly unknown[] | undefined) => {
-            if (!args) return [];
-            return args.map(arg => typeof arg === 'bigint' ? arg.toString() : arg);
-         };
+         const item = abi.find((f: any) => f.type === "function" && toFunctionSelector(abiSignature(f)) === calldata.slice(0, 10).toLowerCase());
+         const signature = item ? abiSignature(item) : undefined;
+         const readOnly = item?.stateMutability === "view" || item?.stateMutability === "pure";
+         const funcInfo = graph.security.privileged_functions.find(f => f.signature === signature && signature !== undefined)
+            || { classification: readOnly ? "read-only" : "unknown", reason: readOnly ? "ABI declares no state mutation" : "Access control has not been established" };
 
          return {
             function: decoded.functionName,
-            args: serializeArgs(decoded.args),
+            signature,
+            args: serializeAbiValue(decoded.args ?? []),
             classification: funcInfo.classification,
             reason: funcInfo.reason
          };
@@ -178,10 +192,11 @@ export class VerClient {
           if (func.name.toLowerCase().includes(q)) results.push({ type: "privileged_function", ...func });
       }
       const normalized = await this.normalizer.normalize(address);
-      const privileged = new Set(graph.security.privileged_functions.map(f => f.name));
+      const privileged = new Set(graph.security.privileged_functions.map(f => f.signature));
       for (const func of JSON.parse(normalized.abi || "[]")) {
-          if (func.type === "function" && !privileged.has(func.name) && func.name.toLowerCase().includes(q)) {
-              results.push({ type: "public_function", name: func.name, inputs: func.inputs, stateMutability: func.stateMutability });
+          if (func.type === "function" && !privileged.has(abiSignature(func)) && func.name.toLowerCase().includes(q)) {
+              results.push({ type: "public_function", name: func.name, signature: abiSignature(func), inputs: func.inputs, stateMutability: func.stateMutability,
+                classification: func.stateMutability === "view" || func.stateMutability === "pure" ? "read-only" : "unknown" });
           }
       }
       for (const role of graph.structural.roles) {
@@ -284,18 +299,9 @@ export class VerClient {
               data: data as any
           }) as any;
 
-          const serializeArgs = (args: any) => {
-              if (!args) return {};
-              const res: any = {};
-              for (const [key, val] of Object.entries(args)) {
-                  res[key] = typeof val === 'bigint' ? val.toString() : val;
-              }
-              return res;
-          };
-
           return {
               eventName: decoded.eventName,
-              args: serializeArgs(decoded.args)
+              args: serializeAbiValue(decoded.args ?? {})
           };
       } catch (e: any) {
           return { error: "Failed to decode event log", details: e.message };
@@ -462,8 +468,8 @@ export class VerClient {
       if (!bytecode || bytecode === "0x") throw new Error(`No contract bytecode at ${address} on chain ${this.chain.id}`);
       const normalized = await this.normalizer.normalize(address);
       const abiRaw = normalized.abi;
-      if (!abiRaw || !normalized.sourceCode || normalized.sourceCode.includes("Pseudo-ABI generated")) {
-        throw new Error("A verified ABI is required for wallet transaction preparation");
+      if (!abiRaw || normalized.sourceVerified !== true || !normalized.sourceCode?.trim() || normalized.sourceCode.includes("Pseudo-ABI generated")) {
+        throw new Error("A verified ABI and complete verified source are required for wallet transaction preparation");
       }
       const abi = JSON.parse(abiRaw);
 

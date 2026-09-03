@@ -8,10 +8,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { VerClient } from "../sdk/client";
 import { VERSION } from "../version";
+import { serializeAbiValue } from "../engine/serialize";
 
 function toolResult(value: any) {
   const failed = Boolean(value?.error) || value?.signable === false || value?.status === "reverted" || value?.status === "failed";
-  return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }], ...(failed ? { isError: true } : {}) };
+  return { content: [{ type: "text" as const, text: JSON.stringify(serializeAbiValue(value), null, 2) }], ...(failed ? { isError: true } : {}) };
 }
 
 const client = new VerClient();

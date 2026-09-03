@@ -1,5 +1,6 @@
 import { IExplorerRepository } from "./repository.interface";
-import { createPublicClient, http, Address, parseAbi } from "viem";
+import { createPublicClient, http, Address, parseAbi, toFunctionSelector } from "viem";
+import { abiSignature, hasAbi, hasSource, mergeAbis } from "../abi";
 import { getActiveChain } from "../../chain/networks";
 
 export interface NormalizedContractData {
@@ -10,6 +11,9 @@ export interface NormalizedContractData {
   sourceCode: string | null;
   contractName?: string;
   compilerVersion?: string;
+  /** True only when every resolved contract has explorer ABI and real source. */
+  sourceVerified: boolean;
+  facets?: { address: string; selectors: string[] }[];
 }
 
 export class DataNormalizer {
@@ -150,7 +154,7 @@ export class DataNormalizer {
             // EIP-2535 Loupe function
             const facets = await this.client.readContract({
                 address: address as Address,
-                abi: parseAbi(["function facets() external view returns (tuple(address facetAddress, bytes4[] functionSelectors)[])"]),
+                abi: parseAbi(["function facets() external view returns ((address facetAddress, bytes4[] functionSelectors)[])"]),
                 functionName: 'facets'
             });
             
@@ -160,21 +164,30 @@ export class DataNormalizer {
                 implementationAddress = "DiamondProxy";
                 console.error(`[Normalizer] Detected Diamond Proxy with ${facetsArray.length} facets.`);
                 
-                // Fetch ABIs for all facets in parallel
+                // Resolve every selected facet; partial explorer data must fail closed.
                 const facetData = await Promise.all(
-                    facetsArray.map((f: any) => this.repository.fetchContractAbi(f.facetAddress))
+                    facetsArray.map(async (f: any) => ({
+                        facet: f,
+                        abi: await this.repository.fetchContractAbi(f.facetAddress),
+                        source: await this.repository.fetchContractSource(f.facetAddress)
+                    }))
                 );
-                
-                const abis = facetData.filter(Boolean).map((a: any) => JSON.parse(a as string));
-                const flatAbi = abis.flat();
-                
-                // Deduplicate ABI items by name/type
-                const uniqueAbi = Array.from(new Map(flatAbi.map((item: any) => 
-                    [item.name + item.type, item]
-                )).values());
-                
+                const proxySource = await this.repository.fetchContractSource(address);
+                const proxyAbi = await this.repository.fetchContractAbi(address);
+                facetData.sort((a, b) => a.facet.facetAddress.toLowerCase().localeCompare(b.facet.facetAddress.toLowerCase()));
+                let complete = hasSource(proxySource) && hasAbi(proxyAbi);
+                const abis = facetData.map(({ facet, abi: raw, source }) => {
+                    if (!hasAbi(raw) || !hasSource(source)) complete = false;
+                    const items = hasAbi(raw) ? JSON.parse(raw!) : [];
+                    const selected = new Set(facet.functionSelectors.map((s: string) => s.toLowerCase()));
+                    const functions = items.filter((item: any) => item.type === "function" && selected.has(toFunctionSelector(abiSignature(item))));
+                    if (functions.length !== selected.size) complete = false;
+                    return items.filter((item: any) => item.type === "event" || item.type === "error").concat(functions);
+                });
+                const uniqueAbi = mergeAbis(...abis);
                 combinedAbi = JSON.stringify(uniqueAbi);
-                combinedSource = "// Diamond Proxy Facets Combined Source";
+                combinedSource = [proxySource, ...facetData
+                    .map(d => d.source ? `// Facet ${d.facet.facetAddress.toLowerCase()}\n${d.source}` : "")].filter(Boolean).join("\n");
                 
                 // Try to resolve name & compiler version for the proxy itself
                 let name = "DiamondProxy";
@@ -193,11 +206,14 @@ export class DataNormalizer {
                     abi: combinedAbi,
                     sourceCode: combinedSource,
                     contractName: name,
-                    compilerVersion: compiler
+                    compilerVersion: compiler,
+                    sourceVerified: complete,
+                    facets: facetsArray.map(f => ({ address: f.facetAddress.toLowerCase(), selectors: [...f.functionSelectors].map((s: string) => s.toLowerCase()).sort() }))
                 };
             }
         } catch (e) {
-            // Not a diamond proxy
+            // Once a diamond was detected, never downgrade incomplete resolution to a base contract.
+            if (implementationAddress === "DiamondProxy") throw e;
         }
     }
 
@@ -206,6 +222,7 @@ export class DataNormalizer {
     let sourceCode: string | null = null;
     let name: string = "Unknown";
     let compiler: string = "Unknown";
+    let sourceVerified = false;
 
     const targetAddress = implementationAddress && implementationAddress !== "DiamondProxy" ? implementationAddress : address;
 
@@ -241,31 +258,14 @@ export class DataNormalizer {
             // ignore
         }
 
-        // Deduplicate functions, events, and custom errors by type/name.
-        // Implementation overrides proxy parameters for matching signatures.
-        const mergedMap = new Map<string, any>();
-        const getKey = (item: any) => {
-            if (!item || !item.type) return `unknown:${Math.random()}`;
-            if (item.type === "function") return `function:${item.name || ""}`;
-            if (item.type === "event") return `event:${item.name || ""}`;
-            if (item.type === "error") return `error:${item.name || ""}`;
-            return `${item.type}:${Math.random()}`;
-        };
-
-        for (const item of proxyAbi) {
-            mergedMap.set(getKey(item), item);
-        }
-        for (const item of implAbi) {
-            mergedMap.set(getKey(item), item);
-        }
-
-        const mergedAbiArray = Array.from(mergedMap.values());
+        sourceVerified = hasAbi(proxyAbiRaw) && hasAbi(implAbiRaw) && hasSource(proxySourceRaw) && hasSource(implSourceRaw);
+        const mergedAbiArray = mergeAbis(Array.isArray(proxyAbi) ? proxyAbi : [], Array.isArray(implAbi) ? implAbi : []);
         abi = JSON.stringify(mergedAbiArray);
 
         // Combine source codes cleanly
-        const proxySource = proxySourceRaw ? `// Proxy Contract (${address})\n${proxySourceRaw}\n` : "";
-        const implSource = implSourceRaw ? `// Implementation Contract (${implementationAddress})\n${implSourceRaw}\n` : "";
-        sourceCode = proxySource + "\n" + implSource;
+        const proxySource = proxySourceRaw ? `// Proxy Contract (${address.toLowerCase()})\n${proxySourceRaw}\n` : "";
+        const implSource = implSourceRaw ? `// Implementation Contract (${implementationAddress.toLowerCase()})\n${implSourceRaw}\n` : "";
+        sourceCode = (proxySource + "\n" + implSource).trim() || null;
     } else {
         const [fetchedAbi, fetchedSource] = await Promise.all([
             this.repository.fetchContractAbi(targetAddress),
@@ -273,6 +273,7 @@ export class DataNormalizer {
         ]);
         abi = fetchedAbi;
         sourceCode = fetchedSource;
+        sourceVerified = hasAbi(fetchedAbi) && hasSource(fetchedSource);
     }
 
     // Fix 2: Unflatten JSON source code (Blockscout specific quirk)
@@ -285,7 +286,7 @@ export class DataNormalizer {
             const parsed = JSON.parse(cleanJson);
             if (parsed.sources) {
                 let combined = "";
-                for (const [filePath, content] of Object.entries(parsed.sources) as any) {
+                for (const [filePath, content] of Object.entries(parsed.sources).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0) as any) {
                     combined += `// File: ${filePath}\n${content.content}\n\n`;
                 }
                 sourceCode = combined;
@@ -305,6 +306,7 @@ export class DataNormalizer {
         if (pseudoAbi) {
             abi = pseudoAbi;
             sourceCode = "// Unverified Contract: Pseudo-ABI generated from bytecode selectors";
+            sourceVerified = false;
         }
     }
 
@@ -315,7 +317,8 @@ export class DataNormalizer {
       abi,
       sourceCode,
       contractName: name,
-      compilerVersion: compiler
+      compilerVersion: compiler,
+      sourceVerified
     };
   }
 }

@@ -47,7 +47,7 @@ Transaction preparation never uses external LLM intent parsing; the former `VER_
 
 ## Graph and registry migration
 
-Graph schema/parser 1.1.0 removes custom errors from emitted events and uses a new cache namespace. Graphs containing errors will produce different hashes and require fresh, explicitly approved attestations. Old matching hashes must not be assumed valid for newly compiled graphs.
+Graph schema/parser/hash 2.0.0 uses a new cache namespace and a versioned hash domain covering chain, proxy implementation/facets, full ABI, source identity and structural facts. All 1.x hashes are incompatible; fresh attestations require explicit approval. Custom errors remain separate from emitted events. See [migration details](GRAPH_V2_MIGRATION.md).
 
 V3 retains the V2 read ABI but adds zero-address rejection, two-step ownership transfer, and attester epochs. Revoking an attester invalidates its existing graphs; reauthorization does not revive them. Accepting ownership also revokes the old owner's attester role and its graphs. Use a dedicated attester rather than the owner for normal publishing. Review this policy with the wallet team and multisig operators before deployment. V2 source and deployed behavior remain unchanged.
 

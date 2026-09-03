@@ -99,6 +99,7 @@ describe("Negative cases — integration", () => {
       const withSource = await pipeline.compile(
         makeInput({
           source: "contract A {}",
+          sourceVerified: true,
           abi: [{ type: "event", name: "X" }],
         })
       );

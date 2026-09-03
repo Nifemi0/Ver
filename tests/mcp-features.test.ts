@@ -4,6 +4,7 @@ import { VerClient } from "../src/sdk/client";
 describe("VerClient New MCP Features", () => {
   it("getTokenMetadata should return default values on failure or unknown", async () => {
     const client = new VerClient();
+    (client as any).client = { readContract: vi.fn().mockRejectedValue(new Error("RPC unavailable")) };
     const metadata = await client.getTokenMetadata("0x0000000000000000000000000000000000000000");
     expect(metadata).toHaveProperty("name");
     expect(metadata).toHaveProperty("symbol");
@@ -14,18 +15,22 @@ describe("VerClient New MCP Features", () => {
 
   it("getGasEstimate should return valid gas estimate values", async () => {
     const client = new VerClient();
+    (client as any).client = { estimateGas: vi.fn().mockResolvedValue(21000n), getGasPrice: vi.fn().mockResolvedValue(1000000000n) };
     const estimate = await client.getGasEstimate(
       "0x0000000000000000000000000000000000000000",
       "0x"
     );
     expect(estimate).toHaveProperty("gasEstimate");
+    expect(estimate.estimatedCostWei).toBe("21000000000000");
   });
 
   it("diffProtocolGraphs should fail if addresses are invalid", async () => {
     const client = new VerClient();
+    const normalize = vi.spyOn((client as any).normalizer, "normalize");
     await expect(
       client.diffProtocolGraphs("invalid-address-a", "invalid-address-b")
     ).rejects.toThrow();
+    expect(normalize).not.toHaveBeenCalled();
   });
 
   it("compileAgentIntent should parse, resolve decimals, encode calldata, and simulate successfully", async () => {
@@ -51,7 +56,7 @@ describe("VerClient New MCP Features", () => {
       fetchCompilerVersion: vi.fn().mockResolvedValue("0.8.20")
     };
     const client = new VerClient(mockLlm, 968, mockRepo);
-    vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi, sourceCode: "contract TestToken {}" });
+    vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi, sourceCode: "contract TestToken {}", sourceVerified: true });
     (client as any).client = {
       getChainId: vi.fn().mockResolvedValue(968),
       getBytecode: vi.fn().mockResolvedValue("0x6000"),

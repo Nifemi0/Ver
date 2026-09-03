@@ -10,18 +10,54 @@ permissions:
 
 jobs:
   app:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
           cache: npm
+      - run: npm install --global npm@11.6.2
       - run: npm ci
       - run: npm run typecheck
       - run: npm test -- --run
       - run: npm run build
       - run: npm audit --audit-level=high
+
+  staging:
+    needs: [app, contracts]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VER_STAGING_AUTODEPLOY == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ver-staging
+      cancel-in-progress: false
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: team_MsmPCRYHNYE4kOYP8mywdGip
+      VERCEL_PROJECT_ID: prj_hE8q0aqirBkswN4stxOPQpGdfv72
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm install --global npm@11.6.2 vercel@54.3.0
+      - name: Require staging deployment credential
+        run: test -n "$VERCEL_TOKEN"
+      - run: vercel pull --yes --environment=preview --git-branch=main
+      - run: vercel build
+      - name: Deploy tested preview build (never production)
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --yes)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Staging URL: $url" >> "$GITHUB_STEP_SUMMARY"
 
   contracts:
     runs-on: ubuntu-latest

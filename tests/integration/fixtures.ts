@@ -628,6 +628,7 @@ export function buildInput(fixture: FixtureContract, overrides?: Partial<Compile
     address: `0x${fixture.name.toLowerCase().padStart(40, "0")}`,
     abi: fixture.abi,
     source: fixture.source,
+    sourceVerified: !!fixture.source,
     isProxy: fixture.isProxy,
     implementation: fixture.implementation,
     metadata: {

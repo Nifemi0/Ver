@@ -4,7 +4,7 @@ import { EVIDENCE_THRESHOLD } from "../config/thresholds";
 import fs from "fs";
 import path from "path";
 
-export const CURRENT_SCHEMA_VERSION = "1.1.0";
+export const CURRENT_SCHEMA_VERSION = "2.0.0";
 export const CURRENT_ENRICHMENT_VERSION = "1.0.1";
 
 export interface CacheMetrics {

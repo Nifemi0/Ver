@@ -10,6 +10,7 @@ const getMockInput = (abi: any[], source: string = ""): CompilerInput => ({
     address: "0x123",
     abi,
     source,
+    sourceVerified: !!source,
     isProxy: false,
     implementation: null,
     metadata: { protocolName: "Test", compilerVersion: "0.8.20" },
@@ -68,7 +69,8 @@ describe('Compiler Extractors', () => {
         expect(pub).toContain("transfer");
         expect(pub).toContain("balanceOf");
 
-        expect(result.privileged_functions[0].classification).toBe("privileged");
+        expect(result.privileged_functions[0].classification).toBe("potentially privileged");
+        expect(result.public_functions.find(f => f.name === "transfer")?.classification).toBe("unknown");
     });
 
     it('DependencyExtractor: extracts interfaces and provenance', async () => {

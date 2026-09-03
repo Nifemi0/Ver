@@ -11,7 +11,8 @@ describe('CompilerPipeline', () => {
                 { type: "function", name: "owner", stateMutability: "view" },
                 { type: "event", name: "Upgraded" }
             ],
-            source: "contract A { assembly { } }", 
+            source: "contract A { assembly { } }",
+            sourceVerified: true,
             isProxy: true,
             implementation: "0xdef",
             metadata: { protocolName: "TestApp", compilerVersion: "0.8.0" },

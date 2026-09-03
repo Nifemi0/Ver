@@ -6,6 +6,9 @@ export interface CompilerInput {
     source: string | null;
     isProxy: boolean;
     implementation: string | null;
+    chainId?: number;
+    sourceVerified?: boolean;
+    facets?: { address: string; selectors: string[] }[];
     metadata: {
         protocolName: string;
         compilerVersion: string;
@@ -55,6 +58,7 @@ export interface EventItem {
 
 export interface FunctionItem {
     name: string;
+    signature?: string;
     classification: string;
     reason: string;
     visibility: string;

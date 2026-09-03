@@ -27,7 +27,9 @@ export class GraphAssembler {
                 is_proxy: input.isProxy,
                 implementation_address: input.implementation || undefined,
                 compiler_version: input.metadata.compilerVersion,
-                schema_version: "1.1.0",
+                schema_version: "2.0.0",
+                source_verified: input.sourceVerified === true,
+                chain_id: input.chainId,
                 enrichment_version: "1.0.0",
                 cache_status: "MISS"
             },

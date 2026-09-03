@@ -4,6 +4,8 @@ export const MetadataSchema = z.object({
   protocol_name: z.string(),
   contract_address: z.string(),
   is_proxy: z.boolean(),
+  source_verified: z.boolean().optional(),
+  chain_id: z.number().optional(),
   implementation_address: z.string().optional(),
   compiler_version: z.string(),
   schema_version: z.string(),
@@ -41,6 +43,7 @@ export const EventItemSchema = z.object({
 
 export const FunctionItemSchema = z.object({
   name: z.string(),
+  signature: z.string().optional(),
   classification: z.string(),
   reason: z.string(),
   visibility: z.string()
@@ -88,6 +91,9 @@ export const RegistrySchema = z.object({
   registered: z.boolean(),
   verified: z.boolean(),
   graphHash: z.string(),
+  hashVersion: z.string().optional(),
+  checkedAt: z.string().optional(),
+  lookupStatus: z.enum(["checked", "unavailable", "disabled"]).optional(),
   metadataURI: z.string(),
   registryAddress: z.string(),
   deploymentNetwork: z.enum(["X Layer Mainnet", "BOT Chain Testnet", "Off-Chain Only"]),

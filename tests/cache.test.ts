@@ -105,7 +105,7 @@ describe('VerCache', () => {
     expect(cache.getMetrics().corrupted).toBe(1);
   });
 
-  it.each(['0.9.0', '1.0.0'])('should reject obsolete schema %s', obsoleteVersion => {
+  it.each(['0.9.0', '1.0.0', '1.1.0'])('should reject obsolete schema %s', obsoleteVersion => {
     const graph = getMockGraph();
     cache.set("0x123", graph);
 

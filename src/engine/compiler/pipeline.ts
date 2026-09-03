@@ -25,6 +25,7 @@ import { GraphAssembler } from "./graph.assembler";
 import { VerSchema } from "../../types/schema";
 import crypto from "crypto";
 import { getActiveNetwork } from "../../chain/networks";
+import { canonicalJson } from "../abi";
 
 
 export class CompilerPipeline {
@@ -49,7 +50,7 @@ export class CompilerPipeline {
             unsupported: [],
             extraction_time_ms: 0,
             stage_times: {},
-            parser_version: "1.1.0",
+            parser_version: "2.0.0",
             trace: ""
         };
         
@@ -91,13 +92,23 @@ export class CompilerPipeline {
 
         // 7. Hash Generation (Off-chain)
         const registryStart = performance.now();
-        // Create a deterministic hash string (sort keys to be safe, but JSON.stringify on structured data is usually deterministic here since order is defined by Schema)
-        const hashInput = JSON.stringify({
+        // Versioned domain: old attestations intentionally do not verify new graphs.
+        const sorted = (items: any[]) => items.map(canonicalJson).sort();
+        const hashInput = canonicalJson({
+            domain: "ver.protocol-graph/v2",
+            chainId: input.chainId ?? null,
             address: input.address.toLowerCase(),
-            roles: graph.structural.roles,
-            events: graph.structural.events,
-            dependencies: graph.structural.dependencies,
-            functions: graph.security.privileged_functions
+            implementation: input.implementation?.toLowerCase() ?? null,
+            isProxy: input.isProxy,
+            facets: sorted((input.facets ?? []).map(f => ({ address: f.address.toLowerCase(), selectors: f.selectors.map(s => s.toLowerCase()).sort() }))),
+            abi: sorted(input.abi),
+            source: input.source?.replace(/\r\n/g, "\n") ?? null,
+            sourceVerified: input.sourceVerified === true,
+            compilerVersion: input.metadata.compilerVersion,
+            roles: sorted(graph.structural.roles),
+            events: sorted(graph.structural.events),
+            dependencies: sorted(graph.structural.dependencies),
+            functions: sorted([...functions.privileged_functions, ...functions.public_functions])
         });
         const graphHash = "0x" + crypto.createHash("sha256").update(hashInput).digest("hex");
         
@@ -105,6 +116,7 @@ export class CompilerPipeline {
             registered: false,
             verified: false,
             graphHash: graphHash,
+            hashVersion: "2.0.0",
             metadataURI: "",
             registryAddress: "0x0000000000000000000000000000000000000000",
             deploymentNetwork: input.deploymentNetwork ?? (getActiveNetwork() === "botTestnet" ? "BOT Chain Testnet" : "X Layer Mainnet")

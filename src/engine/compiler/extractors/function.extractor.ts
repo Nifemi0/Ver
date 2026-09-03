@@ -1,4 +1,5 @@
 import { CompilerInput, GraphExtractor, FunctionResult, FunctionItem } from "../interfaces";
+import { abiSignature } from "../../abi";
 
 export class FunctionExtractor implements GraphExtractor<FunctionResult> {
     public name = "FunctionExtractor";
@@ -27,19 +28,21 @@ export class FunctionExtractor implements GraphExtractor<FunctionResult> {
                         ? item.stateMutability : "external";
 
                     if (isPrivileged) {
-                        // ADR-014: classification = "privileged" ← determined by state mutation heuristics (prefixes like set/update/mint/burn/pause/upgrade)
+                        // A name heuristic is a review hint, not proof of access control.
                         privileged.push({
                             name: item.name || "",
-                            classification: "privileged",
-                            reason: "state mutation heuristic",
+                            signature: abiSignature(item),
+                            classification: "potentially privileged",
+                            reason: "Name-based heuristic only; access control is not established",
                             visibility
                         });
                     } else if (visibility !== "private" && visibility !== "internal") {
-                        // ADR-014: classification = "read-only" or "public mutator" ← derived from stateMutability (pure/view means read-only, nonpayable/payable means mutator)
+                        // External visibility does not mean unrestricted authorization.
                         publicFuncs.push({
                             name: item.name || "",
-                            classification: isViewOrPure ? "read-only" : "public mutator",
-                            reason: isViewOrPure ? "no state mutation" : "standard state mutation",
+                            signature: abiSignature(item),
+                            classification: isViewOrPure ? "read-only" : "unknown",
+                            reason: isViewOrPure ? "ABI declares no state mutation" : "ABI visibility does not establish access control",
                             visibility
                         });
                     }

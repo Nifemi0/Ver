@@ -2,7 +2,7 @@
 
 ## Current boundary
 
-Release candidate 1.0.6 contains local remediation. It is not a production-readiness guarantee and has not been deployed or published by this change. BOT Chain 968 is primary; X Layer 196 remains explicitly selectable for compatibility.
+Release candidate 1.0.7 contains local remediation. It is not a production-readiness guarantee and has not been deployed or published by this change. BOT Chain 968 is primary; X Layer 196 remains explicitly selectable for compatibility.
 
 The active on-chain V2 registry is unchanged: `0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5`. `VerRegistryV3.sol` is an undeployed proposal. API deployment, npm publication, registry deployment and attestation writes are separate approval gates.
 
@@ -14,7 +14,8 @@ Owner: Ver team.
 - Verify malformed, negated, conditional and compound requests cannot become signable.
 - Verify exact decimals, symbol/target identity, RPC chain ID and false/malformed ERC-20 return handling.
 - Verify all MCP tools, stdout protocol framing, proxy ABI decoding, public-function search and BOT gas fields.
-- Review graph format 1.1.0 migration: errors no longer count as events; clear via versioned cache namespace and obtain fresh attestations where hashes change.
+- Review [graph format/hash 2.0.0 migration](GRAPH_V2_MIGRATION.md): versioned identity includes chain, implementation/facets, full ABI and source. Every old attestation requires replacement through a separately approved write.
+- Require both Windows and Linux CI, using Node 22 and npm 11.6.2. Automatic Git deployment is disabled; see [CI-gated staging process](STAGING_RELEASE.md). Production promotion remains separate.
 - Review the handoff and OpenAPI together. Publish only the tested package/build.
 
 ## Stage two: deploy approved API build to staging

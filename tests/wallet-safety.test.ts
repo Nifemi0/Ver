@@ -10,7 +10,7 @@ const abi = parseAbi(["function approve(address spender,uint256 amount) returns 
 function fixture() {
   const provider = { generate: vi.fn() };
   const client = new VerClient(provider, 968);
-  const normalize = vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi: JSON.stringify(abi), sourceCode: "verified fixture" });
+  const normalize = vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi: JSON.stringify(abi), sourceCode: "verified fixture", sourceVerified: true });
   const rpc = {
     getChainId: vi.fn().mockResolvedValue(968),
     getBytecode: vi.fn().mockResolvedValue("0x6000"),
@@ -64,7 +64,7 @@ describe("wallet signing safety", () => {
   });
   it("supports a verified token with no declared return value", async () => {
     const { client, rpc, normalize } = fixture();
-    normalize.mockResolvedValue({ abi: JSON.stringify(parseAbi(["function approve(address spender,uint256 amount)"])), sourceCode: "verified fixture" });
+    normalize.mockResolvedValue({ abi: JSON.stringify(parseAbi(["function approve(address spender,uint256 amount)"])), sourceCode: "verified fixture", sourceVerified: true });
     rpc.call.mockResolvedValue({ data: "0x" });
     expect((await client.compileAgentIntent(token, intent, account)).signable).toBe(true);
   });

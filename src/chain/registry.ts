@@ -46,7 +46,7 @@ export interface RegistryAttestation {
 function getPublicClient(chainId = getActiveChain().id) {
   return createPublicClient({
     chain: getChainById(chainId),
-    transport: http()
+    transport: http(undefined, { timeout: 10000, retryCount: 1 })
   });
 }
 

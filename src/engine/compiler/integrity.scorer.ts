@@ -26,7 +26,7 @@ export class IntegrityBuilder {
     public build(input: CompilerInput, extractedDeps: number, extractedEvents: number): IntegrityEvidence {
         return {
             verifiedABI: !!(input.abi && input.abi.length > 0),
-            verifiedSource: !!input.source,
+            verifiedSource: input.sourceVerified === true && !!input.source?.trim(),
             openzeppelin: !!(input.source && input.source.includes("@openzeppelin")),
             proxyResolved: input.isProxy && !!input.implementation,
             dependencyCoverage: extractedDeps > 0 ? 1.0 : 0.0,

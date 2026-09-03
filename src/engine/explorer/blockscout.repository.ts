@@ -241,7 +241,6 @@ export class BlockscoutRepository implements IExplorerRepository {
 
     try {
       const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
 
       if (response.status === 429) {
         throw new ExplorerRateLimitError();
@@ -261,11 +260,13 @@ export class BlockscoutRepository implements IExplorerRepository {
 
       return parsedData.data;
     } catch (error: any) {
-      clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
         throw new ExplorerTimeoutError();
       }
       throw error;
+    } finally {
+      // Headers are not completion: bound body consumption and validation too.
+      clearTimeout(timeoutId);
     }
   }
 

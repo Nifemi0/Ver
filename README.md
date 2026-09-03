@@ -2,7 +2,7 @@
 
 **Deterministic by design. Explainable by AI.**
 
-Release candidate: `1.0.6`. These are repository capabilities, not a claim that the hosted API or npm package has been updated. See [wallet handoff](docs/WALLET_TEAM_HANDOFF.md) and [rollout plan](docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md) before integration.
+Release candidate: `1.0.7`. These are repository capabilities, not a claim that the hosted API or npm package has been updated. Graph schema/hash `2.0.0` requires fresh attestations; see [migration notes](docs/GRAPH_V2_MIGRATION.md), [wallet handoff](docs/WALLET_TEAM_HANDOFF.md) and [rollout plan](docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md) before integration.
 
 Ver is BOT Chain's deterministic semantic and wallet-safety layer. It compiles blockchain artifacts (ABIs, bytecode, state variables) into an AI-readable Protocol Graph that wallets, IDEs, AI agents, and developer tools can consume through HTTP or MCP.
 

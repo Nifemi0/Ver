@@ -15,6 +15,7 @@ The on-chain registry stores graph-hash attestations only. It never holds wallet
 - `deployments/botTestnet.json`: existing deployment metadata. No migration has occurred.
 - `tests/wallet-safety.test.ts` and API tests: executable signing-gate regression cases.
 - `docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md`: staged acceptance and release gates.
+- `docs/GRAPH_V2_MIGRATION.md`: graph/hash 2.0.0 compatibility, registry freshness and classification semantics for release candidate 1.0.7.
 
 ## Integration sequence
 

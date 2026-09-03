@@ -1,6 +1,6 @@
 # BOT Chain SDK integration
 
-Release candidate `1.0.6` exports `VerClient` from `aic-mcp`. This SDK runs in Node.js (Node 22), not directly inside a wallet extension: use the HTTP endpoint from the wallet, or run the SDK on your backend. Package publication is a separate release step; do not assume the npm latest version contains these fixes.
+Release candidate `1.0.7` exports `VerClient` from `aic-mcp`. This SDK runs in Node.js (Node 22), not directly inside a wallet extension: use the HTTP endpoint from the wallet, or run the SDK on your backend. Package publication is a separate release step; do not assume the npm latest version contains these fixes.
 
 ```typescript
 import { VerClient } from "aic-mcp";
@@ -36,7 +36,7 @@ The wallet must reject stale responses, require matching active account and chai
 
 | Method | Purpose and limitation |
 | --- | --- |
-| `getProtocolGraph(address, forceRefresh?)` | Contract structure; graph format 1.1.0 excludes custom errors from events. |
+| `getProtocolGraph(address, forceRefresh?)` | Graph format/hash 2.0.0 binds chain, implementation/facets, full ABI and source. Registry authorization is re-read even on structural cache hits. |
 | `getContractSummary(address)` | Lightweight summary; completeness scores are not security guarantees. |
 | `explainTransaction(address, calldata)` | Proxy-resolved ABI decoding and privilege classification; not an authorization decision. |
 | `decodeEventLog(address, topics, data)` | Decode emitted logs with the resolved ABI. |
@@ -55,3 +55,11 @@ The wallet must reject stale responses, require matching active account and chai
 Set `VER_NETWORK=botTestnet`, `BOT_TESTNET_RPC_URL=https://rpc.bohr.life`, and `VER_ENABLE_WRITES=false`. No wallet keys or deployer keys belong in this service. X Layer 196 remains explicitly selectable for compatibility, not as the BOT integration default.
 
 Graph attestations and wallet preparation are different checks. `registry.verified` is an active matching hash, not an audit. A missing attestation is not silently upgraded into trust by a high structural score. Wallet teams must decide whether their policy additionally requires an allowlisted token, matching registry attestation, or both.
+
+## Graph 2.0 migration
+
+See [migration contract](docs/GRAPH_V2_MIGRATION.md). Never reuse a 1.x attestation for a 2.0 graph. `registry.lookupStatus` distinguishes `checked`, `unavailable`, and `disabled`; lookup failure always returns `verified:false`. `checkedAt` timestamps the lookup attempt, not transaction inclusion. Structural cache entries remain snapshots; use `forceRefresh:true` to rebuild artifacts before attestation decisions.
+
+Decoding returns recursive decimal strings for integers, including nested arrays and tuple objects. `classification: "unknown"` means access control is not established. `potentially privileged` is only a name-based heuristic; `read-only` reflects ABI mutability, not permission to read or proof of safety. Function signatures preserve overloads.
+
+Wallet preparation requires explorer-provided source and ABI for every resolved proxy/implementation or diamond facet. Empty, comment-only, pseudo-source and partial resolutions are blocked. This relies on the configured explorer/repository's verified-artifact contract, not an independent source-to-bytecode audit.
