@@ -31,5 +31,6 @@ vercel pull --yes --environment=preview --git-branch=main --scope nifemi0s-proje
 Require-Success 'Pull preview settings'
 vercel build --scope nifemi0s-projects
 Require-Success 'Build preview'
+if (git status --porcelain) { throw 'Build changed the checkout; deployment stopped.' }
 vercel deploy --prebuilt --yes --scope nifemi0s-projects
 Require-Success 'Deploy preview'

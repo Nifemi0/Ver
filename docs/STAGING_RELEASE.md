@@ -5,6 +5,7 @@ BOT Chain testnet remains the target. Production aliases are not promoted by thi
 ## Deployment controls
 
 - `vercel.json` disables automatic Git deployments. The Vercel project also has automatic production alias assignment disabled; the existing live site remains in place.
+- Vercel installs with `npm ci`, not `npm install`; both release paths refuse to upload if building changed the checkout.
 - `.github/workflows/ci.yml` requires application tests/typechecks/builds/audits on Ubuntu and Windows and contract build/tests/typecheck/audit.
 - Automated staging deployment has `needs: [app, contracts]`, runs only on a main-branch push, and uses the GitHub `staging` environment. It is opt-in: set repository variable `VER_STAGING_AUTODEPLOY=true` only after storing a project-scoped Vercel token as environment secret `VERCEL_TOKEN`. Never place that token in source or chat.
 - Until that credential is provisioned, authenticated operators use `pwsh -File scripts/deploy-staging.ps1`. It refuses a dirty checkout, an unpublished SHA, a non-successful latest CI run, or a missing required job. It deploys preview only, never production.

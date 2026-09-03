@@ -52,6 +52,8 @@ jobs:
         run: test -n "$VERCEL_TOKEN"
       - run: vercel pull --yes --environment=preview --git-branch=main
       - run: vercel build
+      - name: Reject build mutations
+        run: test -z "$(git status --porcelain)"
       - name: Deploy tested preview build (never production)
         id: deploy
         run: |

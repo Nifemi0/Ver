@@ -9,6 +9,7 @@ describe("release contract", () => {
     const config = JSON.parse(readFileSync("vercel.json", "utf8"));
     const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
     expect(config.git.deploymentEnabled).toBe(false);
+    expect(config.installCommand).toBe("npm ci");
     expect(workflow).toContain("needs: [app, contracts]");
     expect(workflow).toContain("vars.VER_STAGING_AUTODEPLOY == 'true'");
     expect(workflow).toContain("vercel deploy --prebuilt --yes");
