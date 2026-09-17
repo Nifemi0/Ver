@@ -18,7 +18,7 @@
     }
   },
   "bin": {
-    "aic-mcp": "./dist/server/mcp.js"
+    "aic-mcp": "dist/server/mcp.js"
   },
   "files": [
     "dist",
