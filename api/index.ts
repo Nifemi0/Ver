@@ -8,6 +8,7 @@ import { MermaidExporter } from "../src/engine/export/mermaid";
 import { getChainById } from "../src/chain/networks";
 import { z } from "zod";
 import { VERSION } from "../src/version";
+import { PreparationRejected } from "../src/engine/errors";
 
 const app = express();
 // Only Vercel's known edge topology is trusted by default. Direct servers ignore XFF.
@@ -17,6 +18,7 @@ function failure(res: express.Response, status: number, code: string, error: str
     return res.status(status).json({ success: false, signable: false, simulationStatus: "skipped", risk: "blocked", blockingReasons: [code], error, ...(details ? { details } : {}) });
 }
 function routeFailure(res: express.Response, error: unknown, fallback: string) {
+    if (error instanceof PreparationRejected) return failure(res, 422, error.code, error.message);
     if (error instanceof RequestError) return failure(res, 400, "INVALID_CHAIN", error.message);
     console.error("[API] request failed", error);
     return failure(res, 503, "PREPARATION_UNAVAILABLE", fallback);
@@ -32,7 +34,7 @@ app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use((req, res, next) => {
     res.setHeader(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://rpc.bohr.life https://scan.bohr.life https://web3.okx.com; frame-ancestors 'none';"
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://rpc.xlayer.tech https://rpc.bohr.life https://rpc.botchain.ai https://scan.bohr.life https://scan.botchain.ai https://web3.okx.com; frame-ancestors 'none';"
     );
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
@@ -53,7 +55,7 @@ app.get("/swagger.json", (req, res) => {
 
 const clients = new Map<number, VerClient>();
 const WalletPrepareSchema = z.object({
-    chainId: z.union([z.literal(196), z.literal(968)]),
+    chainId: z.union([z.literal(196), z.literal(677), z.literal(968)]),
     contractAddress: z.string().refine(isAddress, "Invalid contractAddress"),
     intent: z.string().trim().min(1).max(1000),
     sender: z.string().refine(isAddress, "Invalid sender"),
@@ -63,7 +65,7 @@ function getClient(req: express.Request, requestedChainId?: number): VerClient {
     const rawChainId = requestedChainId ?? req.query?.chainId ?? req.body?.chainId ?? req.body?.arguments?.chainId ?? req.body?.params?.chainId;
     const chainId = rawChainId === undefined ? 968 : Number(rawChainId);
     if ((rawChainId !== undefined && !["number", "string"].includes(typeof rawChainId)) || !Number.isInteger(chainId)) throw new RequestError("chainId must be an integer");
-    try { getChainById(chainId); } catch { throw new RequestError("Unsupported chainId. Use 968 (BOT Chain) or 196 (compatibility)."); }
+    try { getChainById(chainId); } catch { throw new RequestError("Unsupported chainId. Use 677 (BOT Chain mainnet), 968 (BOT Chain testnet), or 196 (compatibility)."); }
     let client = clients.get(chainId);
     if (!client) {
         client = new VerClient(undefined, chainId);
@@ -80,7 +82,7 @@ app.get(["/health", "/api/health"], (_req, res) => {
         package: "aic-mcp",
         version: VERSION,
         primaryChainId: 968,
-        supportedChains: [968, 196],
+        supportedChains: [968, 677, 196],
         time: new Date().toISOString(),
     });
 });
@@ -193,7 +195,7 @@ app.post("/api/wallet/prepare", rateLimiter, async (req, res) => {
         return res.status(result.signable === true ? 200 : 422).json(result);
     } catch (e: any) {
         console.error("[API] wallet preparation failed", e);
-        return failure(res, 422, "PREPARATION_FAILED", "Wallet preparation failed");
+        return routeFailure(res, e, "Wallet preparation unavailable");
     }
 });
 

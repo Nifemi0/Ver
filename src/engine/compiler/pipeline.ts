@@ -50,7 +50,7 @@ export class CompilerPipeline {
             unsupported: [],
             extraction_time_ms: 0,
             stage_times: {},
-            parser_version: "2.0.0",
+            parser_version: "2.1.0",
             trace: ""
         };
         
@@ -95,12 +95,14 @@ export class CompilerPipeline {
         // Versioned domain: old attestations intentionally do not verify new graphs.
         const sorted = (items: any[]) => items.map(canonicalJson).sort();
         const hashInput = canonicalJson({
-            domain: "ver.protocol-graph/v2",
+            domain: "ver.protocol-graph/v2.1",
+            runtimeCodeHash: input.runtimeCodeHash ?? null,
+            implementationCodeHash: input.implementationCodeHash ?? null,
             chainId: input.chainId ?? null,
             address: input.address.toLowerCase(),
             implementation: input.implementation?.toLowerCase() ?? null,
             isProxy: input.isProxy,
-            facets: sorted((input.facets ?? []).map(f => ({ address: f.address.toLowerCase(), selectors: f.selectors.map(s => s.toLowerCase()).sort() }))),
+            facets: sorted((input.facets ?? []).map(f => ({ address: f.address.toLowerCase(), selectors: f.selectors.map(s => s.toLowerCase()).sort(), codeHash: f.codeHash ?? null }))),
             abi: sorted(input.abi),
             source: input.source?.replace(/\r\n/g, "\n") ?? null,
             sourceVerified: input.sourceVerified === true,
@@ -116,10 +118,10 @@ export class CompilerPipeline {
             registered: false,
             verified: false,
             graphHash: graphHash,
-            hashVersion: "2.0.0",
+            hashVersion: "2.1.0",
             metadataURI: "",
             registryAddress: "0x0000000000000000000000000000000000000000",
-            deploymentNetwork: input.deploymentNetwork ?? (getActiveNetwork() === "botTestnet" ? "BOT Chain Testnet" : "X Layer Mainnet")
+            deploymentNetwork: input.deploymentNetwork ?? (getActiveNetwork() === "botMainnet" ? "BOT Chain Mainnet" : getActiveNetwork() === "botTestnet" ? "BOT Chain Testnet" : "X Layer Mainnet")
         };
         diagnostics.stage_times['RegistryLookup'] = performance.now() - registryStart;
 

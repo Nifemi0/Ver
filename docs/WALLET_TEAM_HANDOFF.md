@@ -1,27 +1,29 @@
 # BOT Chain wallet-team handoff
 
+The current repository candidate is 1.0.8 with graph/hash 2.1.0. Read [trust corrections](TRUST_FIXES_1_0_8.md) before integrating. Previously tested staging is 1.0.7; do not assume it includes these local changes until a matching API deployment is tested.
+
 ## What Ver does
 
 Ver is off-chain wallet middleware. The wallet sends a selected BOT Chain contract, connected account, chain ID and a single supported intent. Ver resolves verified contract source/ABI (including proxies), validates exact token units, constructs unsigned calldata and tests it with read-only `eth_call`. It returns a reviewable result; the wallet retains confirmation, signing, broadcast and receipt tracking.
 
-The on-chain registry stores graph-hash attestations only. It never holds wallet funds or signs wallet transactions. BOT Chain testnet is chain 968; deployed V2 is `0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5`. The separate V3 source is an undeployed candidate, not a live contract address.
+The on-chain registry stores graph-hash attestations only. It never holds wallet funds or signs wallet transactions. BOT Chain testnet is chain 968; active V3 is `0x1763B6958CdD3FF5CebF64c960382ECF3669fFF2`. BOT Chain mainnet is chain 677; active V3 is `0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7`. V2 remains on-chain at `0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5` as historical testnet context.
 
 ## Team deliverables
 
 - `swagger.json`: HTTP request and response contract.
 - `SDK.md`: Node SDK and supported grammar; the wallet itself should use HTTP.
 - `contracts/contracts/VerRegistry.sol`: deployed V2 source, deliberately unchanged.
-- `contracts/contracts/VerRegistryV3.sol`: proposed replacement, pending independent review and deployment approval.
-- `deployments/botTestnet.json`: existing deployment metadata. No migration has occurred.
+- `contracts/contracts/VerRegistryV3.sol`: active BOT Chain testnet and mainnet registry with two-step ownership and attester-epoch invalidation.
+- `deployments/botTestnet.json` and `deployments/botMainnet.json`: active BOT deployment metadata.
 - `tests/wallet-safety.test.ts` and API tests: executable signing-gate regression cases.
 - `docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md`: staged acceptance and release gates.
-- `docs/GRAPH_V2_MIGRATION.md`: graph/hash 2.0.0 compatibility, registry freshness and classification semantics for release candidate 1.0.7.
+- `docs/GRAPH_V2_MIGRATION.md`: graph/hash 2.1.0 compatibility, registry freshness and classification semantics for release candidate 1.0.8.
 
 ## Integration sequence
 
-1. Select BOT testnet and an allowlisted target contract; capture the connected account. Build a request to `POST /api/wallet/prepare`. Do not send keys or seed phrases.
+1. Select BOT testnet `968` or BOT mainnet `677` and an allowlisted target contract; capture the connected account. Build a request to `POST /api/wallet/prepare`. Do not send keys or seed phrases.
 2. Accept only HTTP 200, `signable === true`, `simulationStatus === "success"`, and an empty `blockingReasons` list. All timeouts, malformed responses and non-200 responses block this preparation.
-3. Require top-level and transaction chain ID 968; `sender` and `transaction.from` must match the still-connected account. Require the requested contract, zero native value, valid calldata, valid timestamps, and an unexpired result. Discard on any input/account/network change; never reuse an old preparation.
+3. Require top-level and transaction chain ID to match the selected BOT network; `sender` and `transaction.from` must match the still-connected account. Require the requested contract, zero native value, valid calldata, valid timestamps, and an unexpired result. Discard on any input/account/network change; never reuse an old preparation.
 4. Independently decode calldata with the trusted token ABI. Compare function, recipient/spender and exact base-unit amount against the user's selected token and request. A symbol is not a unique identity.
 5. Display chain, token contract, action, amount, recipient/spender and approval allowance. Re-simulate using the wallet's provider immediately before requesting a signature. This reduces state drift; it cannot guarantee future inclusion or execution.
 6. Ask the user to confirm, sign locally, broadcast through the wallet, track receipt/replacement/failure, and show explorer status. Ver does none of these signing or sending steps.
@@ -42,4 +44,4 @@ Joint staging tests must include a genuinely funded, unpaused transfer fixture, 
 
 ## Release status
 
-Local fixes are not hosted deployment or npm publication. Do not treat the public URL as passing this checklist until the same build is deployed and tested with the wallet team. There is no guarantee of zero issues. Production approval still needs shared rate limiting, monitoring, provider capacity, independent security review, multisig operations and rollback ownership.
+Mainnet registry deployment is complete, but local/API fixes are not hosted deployment or npm publication. Do not treat the public URL as passing this checklist until the same build is deployed and tested with the wallet team. No graph attestation is live yet because supported mainnet contracts have not been selected. There is no guarantee of zero issues. Production approval still needs shared rate limiting, monitoring, provider capacity, independent security review, multisig operations and rollback ownership.

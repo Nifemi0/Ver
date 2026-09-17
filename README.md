@@ -2,9 +2,16 @@
 
 **Deterministic by design. Explainable by AI.**
 
-Release candidate: `1.0.7`. These are repository capabilities, not a claim that the hosted API or npm package has been updated. Graph schema/hash `2.0.0` requires fresh attestations; see [migration notes](docs/GRAPH_V2_MIGRATION.md), [wallet handoff](docs/WALLET_TEAM_HANDOFF.md) and [rollout plan](docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md) before integration.
+Current repository candidate: `1.0.8`. BOT Chain testnet and mainnet V3 registries are deployed and source-verified, but the hosted API and npm package may still lag until a separate release. Graph schema/hash `2.1.0` requires fresh, separately approved attestations; none are written until supported BOT mainnet contract addresses are selected and reviewed. See [migration notes](docs/GRAPH_V2_MIGRATION.md), [wallet handoff](docs/WALLET_TEAM_HANDOFF.md) and [rollout plan](docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md) before integration.
 
 Ver is BOT Chain's deterministic semantic and wallet-safety layer. It compiles blockchain artifacts (ABIs, bytecode, state variables) into an AI-readable Protocol Graph that wallets, IDEs, AI agents, and developer tools can consume through HTTP or MCP.
+
+Active BOT registries:
+
+- BOT Chain mainnet `677`: `0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7`
+- BOT Chain testnet `968`: `0x1763B6958CdD3FF5CebF64c960382ECF3669fFF2`
+
+These registries store reviewed graph hashes only. They do not sign, route, custody, or approve wallet transactions.
 
 ---
 
@@ -74,6 +81,26 @@ Provide AI tools with native understanding of BOT Chain contracts. Add Ver to yo
 }
 ```
 
+For BOT Chain mainnet, use:
+
+```json
+{
+  "mcpServers": {
+    "ver": {
+      "command": "npx",
+      "args": ["-y", "aic-mcp"],
+      "env": {
+        "VER_NETWORK": "botMainnet",
+        "BOT_MAINNET_RPC_URL": "https://rpc.botchain.ai",
+        "BOT_MAINNET_REGISTRY_ADDRESS": "0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7"
+      }
+    }
+  }
+}
+```
+
+MCP tools also accept optional `chainId` per call: `677` for BOT Chain mainnet, `968` for BOT Chain testnet, and `196` for X Layer compatibility.
+
 ## Links
 
 - **Website & Documentation**: [https://verprotocol.vercel.app](https://verprotocol.vercel.app)
@@ -81,3 +108,7 @@ Provide AI tools with native understanding of BOT Chain contracts. Add Ver to yo
 
 ---
 *© 2026 Ver Protocol. Built for BOT Chain.*
+
+## Current release boundary
+
+Release candidate **1.0.8** adds graph/hash **2.1.0** trust corrections and BOT Chain mainnet configuration. The on-chain registries are live, but API redeployment, npm publication, wallet-team acceptance, and graph attestations remain separate steps. See [release boundaries and remaining work](docs/TRUST_FIXES_1_0_8.md).

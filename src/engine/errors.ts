@@ -25,3 +25,14 @@ export class ExplorerDataError extends Error {
     this.name = "ExplorerDataError";
   }
 }
+export class PreparationRejected extends Error {
+  constructor(public readonly code: string, message: string) { super(message); this.name = "PreparationRejected"; }
+}
+
+export function isExecutionRevert(error: any): boolean {
+  return /revert/i.test(error?.shortMessage ?? "") || Boolean(error?.walk?.((cause: any) => /ExecutionReverted|ContractFunctionReverted/.test(cause.name)));
+}
+
+export function isMissingContractMethod(error: any): boolean {
+  return isExecutionRevert(error) || Boolean(error?.walk?.((cause: any) => /ContractFunctionZeroData|AbiDecodingZeroData/.test(cause.name)));
+}

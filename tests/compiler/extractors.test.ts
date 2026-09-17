@@ -30,7 +30,7 @@ describe('Compiler Extractors', () => {
         const roles = result.roles.map(r => r.name);
         expect(roles).toContain("Owner");
         expect(roles).toContain("AccessControl");
-        expect(result.roles[0].source).toBe("ABI");
+        expect(result.roles[0].source).toBe("ABI heuristic");
     });
 
     it('EventExtractor: identifies events with provenance', async () => {

@@ -10,6 +10,6 @@
   "rpc": "https://testrpc.xlayer.tech",
   "verified": true,
   "status": "LIVE_ON_XLAYER_TESTNET",
-  "note": "Attestation registry for demo/ASP. Mainnet still pending gas. Do not claim mainnet live.",
+  "note": "Legacy demo/ASP deployment record. Current BOT mainnet and testnet V3 registry records live in deployments/botMainnet.json and deployments/botTestnet.json.",
   "timestamp": "2026-07-16T22:00:00.000Z"
 }

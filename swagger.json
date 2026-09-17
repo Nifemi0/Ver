@@ -3,10 +3,10 @@
   "info": {
     "title": "Ver Protocol Compiler API",
     "description": "Deterministic BOT Chain protocol compiler and wallet-safety API. Compiles smart contracts into Protocol Graphs and maps natural-language intent to ABI-verified, simulated EVM calldata.",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "contact": { "name": "Ver Protocol", "url": "https://verprotocol.vercel.app" }
   },
-  "servers": [{ "url": "https://verprotocol.vercel.app" }],
+  "servers": [{ "url": "/", "description": "Use the origin serving this specification; select the approved deployment explicitly." }],
   "paths": {
     "/api/health": {
       "get": {
@@ -64,7 +64,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "chainId": { "type": "integer", "enum": [968, 196], "description": "BOT Chain is primary; 196 is compatibility-only." },
+                  "chainId": { "type": "integer", "enum": [968, 677, 196], "description": "BOT Chain testnet is 968, BOT Chain mainnet is 677; 196 is compatibility-only." },
                   "contractAddress": { "type": "string", "description": "Target contract (0x...)" },
                   "intent": { "type": "string", "description": "Natural language intent" },
                   "sender": { "type": "string", "description": "Optional sender for eth_call simulation" }
@@ -116,7 +116,7 @@
             "additionalProperties": false,
             "required": ["chainId", "contractAddress", "intent", "sender"],
             "properties": {
-              "chainId": { "type": "integer", "enum": [968, 196], "description": "BOT Chain is primary; 196 is compatibility-only." },
+              "chainId": { "type": "integer", "enum": [968, 677, 196], "description": "BOT Chain testnet is 968, BOT Chain mainnet is 677; 196 is compatibility-only." },
               "contractAddress": { "type": "string" },
               "intent": { "type": "string", "minLength": 1, "maxLength": 1000 },
               "sender": { "type": "string" },
@@ -159,14 +159,14 @@
           "simulationStatus": { "type": "string", "enum": ["success"] },
           "risk": { "type": "string", "enum": ["review"] },
           "blockingReasons": { "type": "array", "maxItems": 0, "items": { "type": "string" } },
-          "chainId": { "type": "integer", "enum": [968, 196] },
+          "chainId": { "type": "integer", "enum": [968, 677, 196] },
           "sender": { "type": "string" },
           "preparedAt": { "type": "string", "format": "date-time" },
           "expiresAt": { "type": "string", "format": "date-time", "description": "60-second preparation lifetime; wallet must discard expired results." },
           "requiresUserConfirmation": { "type": "boolean", "enum": [true] },
           "transaction": {
             "type": "object", "required": ["chainId", "from", "to", "data", "value"],
-            "properties": { "chainId": { "type": "integer", "enum": [968, 196] }, "from": { "type": "string" }, "to": { "type": "string" }, "data": { "type": "string", "pattern": "^0x[0-9a-fA-F]+$" }, "value": { "type": "string", "pattern": "^0+$" } }
+            "properties": { "chainId": { "type": "integer", "enum": [968, 677, 196] }, "from": { "type": "string" }, "to": { "type": "string" }, "data": { "type": "string", "pattern": "^0x[0-9a-fA-F]+$" }, "value": { "type": "string", "pattern": "^0+$" } }
           }
         }
       }

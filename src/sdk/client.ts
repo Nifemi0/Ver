@@ -1,6 +1,7 @@
 import { VerCache, CURRENT_SCHEMA_VERSION } from "../engine/cache";
 import { serializeAbiValue } from "../engine/serialize";
 import { abiSignature } from "../engine/abi";
+import { PreparationRejected } from "../engine/errors";
 import { SemanticCache } from "../engine/enrichment/semantic.cache";
 import { BlockscoutRepository } from "../engine/explorer/blockscout.repository";
 import { XLayerExplorerRepository } from "../engine/explorer/xlayer.repository";
@@ -48,7 +49,8 @@ export class VerClient {
     const cacheKey = `${this.cacheKeyPrefix}${address.toLowerCase()}`;
     let graph = this.cache.get(cacheKey);
 
-    if (!graph || forceRefresh) {
+    // Reconcile current executable identity even when structural data is cached.
+    {
         const normalized = await this.normalizer.normalize(address);
         const input: any = {
             address: normalized.address,
@@ -59,18 +61,25 @@ export class VerClient {
             chainId: this.chain.id,
             sourceVerified: normalized.sourceVerified,
             facets: normalized.facets,
+            runtimeCodeHash: normalized.runtimeCodeHash,
+            implementationCodeHash: normalized.implementationCodeHash,
             metadata: {
                 protocolName: normalized.contractName || "Unknown",
                 compilerVersion: normalized.compilerVersion || "Unknown"
             },
-            deploymentNetwork: this.chain.id === 968 ? "BOT Chain Testnet" : "X Layer Mainnet",
+            deploymentNetwork: this.chain.id === 677 ? "BOT Chain Mainnet" : this.chain.id === 968 ? "BOT Chain Testnet" : "X Layer Mainnet",
             depth: 0,
             maxDepth: 1,
             visited: new Set()
         };
         const { graph: compiledGraph } = await this.compiler.compile(input);
-        graph = compiledGraph;
-        this.cache.set(cacheKey, graph);
+        if (!graph || forceRefresh || graph.registry?.graphHash !== compiledGraph.registry?.graphHash) {
+          graph = compiledGraph;
+          this.cache.set(cacheKey, graph);
+        }
+        graph.metadata.snapshot_block = normalized.snapshotBlock;
+        graph.metadata.identity_checked_at = normalized.identityCheckedAt;
+        graph.metadata.runtime_code_hash = normalized.runtimeCodeHash;
     }
 
     // Mutable authorization must never inherit the structural graph's cache TTL.
@@ -469,7 +478,7 @@ export class VerClient {
       const normalized = await this.normalizer.normalize(address);
       const abiRaw = normalized.abi;
       if (!abiRaw || normalized.sourceVerified !== true || !normalized.sourceCode?.trim() || normalized.sourceCode.includes("Pseudo-ABI generated")) {
-        throw new Error("A verified ABI and complete verified source are required for wallet transaction preparation");
+        throw new PreparationRejected("VERIFIED_ARTIFACTS_REQUIRED", "A verified ABI and complete verified source are required for wallet transaction preparation");
       }
       const abi = JSON.parse(abiRaw);
 
@@ -480,7 +489,8 @@ export class VerClient {
           x.stateMutability !== 'pure'
       );
 
-      const symbol = await this.client.readContract({ address: address as Address, abi: parseAbi(["function symbol() view returns (string)"]), functionName: "symbol" });
+      const blockNumber = BigInt(normalized.snapshotBlock);
+      const symbol = await this.client.readContract({ address: address as Address, abi: parseAbi(["function symbol() view returns (string)"]), functionName: "symbol", blockNumber });
       if (typeof symbol !== "string" || parsed.assetSymbol.toLowerCase() !== symbol.toLowerCase()) return blocked("TOKEN_SYMBOL_MISMATCH", "Intent token symbol does not match the target contract.");
 
       // Check if we need decimals and retrieve them
@@ -490,7 +500,7 @@ export class VerClient {
           const dec = await this.client.readContract({
                   address: address as Address,
                   abi: parseAbi(["function decimals() view returns (uint8)"]),
-                  functionName: "decimals"
+                  functionName: "decimals", blockNumber
           });
           decimals = Number(dec);
           if (!Number.isInteger(decimals) || decimals < 0 || decimals > 255) throw new Error("Invalid token decimals");
@@ -559,6 +569,7 @@ export class VerClient {
             data: encodedCalldata,
             account: sender as Address,
             value: value ? BigInt(value) : undefined,
+            blockNumber,
           });
           simulationStatus = "success";
           simulationResult = simResult.data || "0x";
@@ -608,6 +619,9 @@ export class VerClient {
           blockingReasons,
           requiresUserConfirmation: true,
           sender,
+          snapshotBlock: normalized.snapshotBlock,
+          runtimeCodeHash: normalized.runtimeCodeHash,
+          implementationAddress: normalized.implementationAddress,
           preparedAt: new Date().toISOString(),
           expiresAt: new Date(Date.now() + 60000).toISOString(),
           explanation: `${parsed.functionName} call prepared for ${this.chain.name}. Review the target, arguments, value, and simulation before signing.`,

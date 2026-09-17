@@ -27,10 +27,17 @@ const repo = (proxySource: string | null = source, implSource: string | null = s
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.clearAllMocks(); });
 
+function liveNormalizer(repository: any) {
+  const normalizer = new DataNormalizer(repository);
+  (normalizer as any).client = { getChainId: async () => 968, getBlockNumber: async () => 100n,
+    getBytecode: async () => "0x6000", getStorageAt: async () => `0x${implementation.slice(2).padStart(64, "0")}` };
+  return normalizer;
+}
+
 describe("verified source gate", () => {
   it.each([[null, null], ["\n ", source], [source, null], ["// placeholder", source]])("rejects incomplete proxy artifacts (%s)", async (proxySource, implSource) => {
     const repository = repo(proxySource, implSource);
-    const normalized = await new DataNormalizer(repository).normalize(address);
+    const normalized = await liveNormalizer(repository).normalize(address);
     expect(normalized.sourceVerified).toBe(false);
     const client = new VerClient(undefined, 968, repository);
     (client as any).client = { getChainId: async () => 968, getBytecode: async () => "0x6000" };
@@ -40,10 +47,10 @@ describe("verified source gate", () => {
   it("requires both ABIs, not just source", async () => {
     const repository = repo();
     repository.fetchContractAbi.mockImplementation((a: string) => Promise.resolve(a === address ? null : JSON.stringify(abi)));
-    expect((await new DataNormalizer(repository).normalize(address)).sourceVerified).toBe(false);
+    expect((await liveNormalizer(repository).normalize(address)).sourceVerified).toBe(false);
   });
   it("accepts complete source and ABI provenance", async () => {
-    expect((await new DataNormalizer(repo()).normalize(address)).sourceVerified).toBe(true);
+    expect((await liveNormalizer(repo()).normalize(address)).sourceVerified).toBe(true);
   });
 });
 
@@ -60,7 +67,7 @@ describe("canonical ABI and graph identity", () => {
   it("preserves actual proxy overloads", async () => {
     const repository = repo();
     repository.fetchContractAbi.mockImplementation((a: string) => Promise.resolve(JSON.stringify(parseAbi([a === address ? "function foo(uint256)" : "function foo(uint128)"]))));
-    const normalized = await new DataNormalizer(repository).normalize(address);
+    const normalized = await liveNormalizer(repository).normalize(address);
     expect(JSON.parse(normalized.abi!).map(abiSignature)).toEqual(["foo(uint128)", "foo(uint256)"]);
   });
   it.each([
@@ -73,8 +80,8 @@ describe("canonical ABI and graph identity", () => {
     const original = await compiler.compile(input());
     const changed = await compiler.compile({ ...input(), ...change } as any);
     expect(changed.graph.registry!.graphHash).not.toBe(original.graph.registry!.graphHash);
-    expect(original.graph.registry!.hashVersion).toBe("2.0.0");
-    expect(VerZodSchema.parse(original.graph).registry!.hashVersion).toBe("2.0.0");
+    expect(original.graph.registry!.hashVersion).toBe("2.1.0");
+    expect(VerZodSchema.parse(original.graph).registry!.hashVersion).toBe("2.1.0");
   });
   it("is stable across ABI ordering and object key ordering", async () => {
     const compiler = new CompilerPipeline();
@@ -92,9 +99,10 @@ describe("diamond completeness and selectors", () => {
     repository.fetchContractAbi.mockResolvedValue(JSON.stringify(parseAbi(["function foo(uint256)", "function foo(uint128)"])));
     const normalizer = new DataNormalizer(repository);
     (normalizer as any).client = {
-      getStorageAt: vi.fn().mockResolvedValue("0x"), getBytecode: vi.fn().mockResolvedValue("0x"),
+      getChainId: async () => 968, getBlockNumber: async () => 100n,
+      getStorageAt: vi.fn().mockResolvedValue("0x"), getBytecode: vi.fn().mockResolvedValue("0x6000"),
       readContract: vi.fn().mockImplementation(({ functionName }) => functionName === "facets"
-        ? Promise.resolve([{ facetAddress: implementation, functionSelectors: [toFunctionSelector("foo(uint256)")] }]) : Promise.reject(new Error("not supported"))),
+        ? Promise.resolve([{ facetAddress: implementation, functionSelectors: [toFunctionSelector("foo(uint256)")] }]) : Promise.reject({ shortMessage: "Execution reverted" })),
     };
     return { normalizer, repository };
   };
@@ -132,7 +140,7 @@ describe("fresh registry authorization", () => {
     expect(unavailable.registry).toMatchObject({ verified: false, registryAddress: implementation, lookupStatus: "unavailable" });
     vi.mocked(lookupGraph).mockRejectedValue(new Error("offline"));
     expect((await client.getProtocolGraph(address)).registry!.verified).toBe(false);
-    expect(normalize).toHaveBeenCalledTimes(1);
+    expect(normalize).toHaveBeenCalledTimes(5);
     expect(lookupGraph).toHaveBeenCalledTimes(5);
     vi.stubEnv("VER_REGISTRY_LOOKUP", "false");
     expect((await client.getProtocolGraph(address)).registry).toMatchObject({ verified: false, lookupStatus: "disabled" });

@@ -56,7 +56,7 @@ describe("VerClient New MCP Features", () => {
       fetchCompilerVersion: vi.fn().mockResolvedValue("0.8.20")
     };
     const client = new VerClient(mockLlm, 968, mockRepo);
-    vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi, sourceCode: "contract TestToken {}", sourceVerified: true });
+    vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi, sourceCode: "contract TestToken {}", sourceVerified: true, snapshotBlock: "100" });
     (client as any).client = {
       getChainId: vi.fn().mockResolvedValue(968),
       getBytecode: vi.fn().mockResolvedValue("0x6000"),

@@ -14,10 +14,22 @@ async function main() {
   if (contractName !== "VerRegistry" && contractName !== "VerRegistryV3") throw new Error("Explicitly select VER_REGISTRY_CONTRACT=VerRegistry or VerRegistryV3.");
   const [deployer] = await ethers.getSigners();
   if (!deployer) throw new Error("No deployment signer configured for the selected network.");
+  const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Deploying with:", deployer.address);
-  console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), networkName === "botTestnet" ? "BOT" : "OKB");
+  const nativeSymbol = networkName === "botTestnet" || networkName === "botMainnet" ? "BOT" : "OKB";
+  console.log("Balance:", ethers.formatEther(balance), nativeSymbol);
 
   const Registry = await ethers.getContractFactory(contractName);
+  const deploymentTx = await Registry.getDeployTransaction();
+  const estimatedGas = await ethers.provider.estimateGas({ ...deploymentTx, from: deployer.address });
+  const fee = await ethers.provider.getFeeData();
+  const gasPrice = fee.gasPrice ?? 0n;
+  const estimatedCost = estimatedGas * gasPrice;
+  console.log("Estimated gas:", estimatedGas.toString());
+  console.log("Gas price:", gasPrice.toString());
+  console.log("Estimated deploy cost:", ethers.formatEther(estimatedCost), nativeSymbol);
+  if (gasPrice > 0n && balance < estimatedCost) throw new Error("Insufficient deployer balance for estimated deployment cost.");
+
   const registry = await Registry.deploy();
   await registry.waitForDeployment();
   const addr = await registry.getAddress();
@@ -31,14 +43,15 @@ async function main() {
   console.log("Block Number:", blockNumber);
 
   // Persist a network-specific record; this script never overwrites X Layer
-  // metadata when run against BOT Chain testnet.
+  // metadata when run against BOT Chain.
+  const isBot = networkName === "botTestnet" || networkName === "botMainnet";
   const deploymentData = {
-      network: networkName === "botTestnet" ? "BOT Chain Testnet" : networkName,
+      network: networkName === "botTestnet" ? "BOT Chain Testnet" : networkName === "botMainnet" ? "BOT Chain Mainnet" : networkName,
       contract: contractName,
       version: contractName === "VerRegistryV3" ? 3 : 2,
       chainId: (await ethers.provider.getNetwork()).chainId.toString(),
-      rpc: networkName === "botTestnet" ? (process.env.BOT_TESTNET_RPC_URL ?? "https://rpc.bohr.life") : networkName === "xlayer" ? (process.env.XLAYER_RPC_URL ?? "https://rpc.xlayer.tech") : networkName === "xlayerTestnet" ? (process.env.XLAYER_TESTNET_RPC_URL ?? "https://testrpc.xlayer.tech") : null,
-      explorer: networkName === "botTestnet" ? "https://scan.bohr.life" : networkName === "xlayer" ? "https://web3.okx.com/explorer/xlayer" : null,
+      rpc: networkName === "botTestnet" ? (process.env.BOT_TESTNET_RPC_URL ?? "https://rpc.bohr.life") : networkName === "botMainnet" ? (process.env.BOT_MAINNET_RPC_URL ?? "https://rpc.botchain.ai") : networkName === "xlayer" ? (process.env.XLAYER_RPC_URL ?? "https://rpc.xlayer.tech") : networkName === "xlayerTestnet" ? (process.env.XLAYER_TESTNET_RPC_URL ?? "https://testrpc.xlayer.tech") : null,
+      explorer: networkName === "botTestnet" ? "https://scan.bohr.life" : networkName === "botMainnet" ? "https://scan.botchain.ai" : networkName === "xlayer" ? "https://web3.okx.com/explorer/xlayer" : null,
       deployer: deployer.address,
       address: addr,
       transactionHash: txHash,
@@ -62,9 +75,9 @@ async function main() {
 
   console.log(`Deployment saved to deployments/${fileName}`);
   console.log("Add to .env:");
-  const prefix = networkName === "botTestnet" ? "BOT_TESTNET_REGISTRY_ADDRESS" : "REGISTRY_ADDRESS";
+  const prefix = networkName === "botTestnet" ? "BOT_TESTNET_REGISTRY_ADDRESS" : networkName === "botMainnet" ? "BOT_MAINNET_REGISTRY_ADDRESS" : "REGISTRY_ADDRESS";
   console.log(`${prefix}=${addr}`);
-  if (networkName !== "botTestnet") console.log(`NEXT_PUBLIC_REGISTRY_ADDRESS=${addr}`);
+  if (!isBot) console.log(`NEXT_PUBLIC_REGISTRY_ADDRESS=${addr}`);
 }
 
 main().catch((e) => { console.error(e); process.exitCode = 1; });

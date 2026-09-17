@@ -1,14 +1,14 @@
-# Graph 2.0 migration and review remediation
+# Graph 2.1 migration and review remediation
 
-Applies to repository release candidate 1.0.7. No deployment, npm publication, registry migration or attestation write is performed by this change.
+Applies to repository release candidate 1.0.8. BOT Chain testnet and mainnet V3 registries are deployed and source-verified. No npm publication or graph attestation write is performed by this change.
 
 ## Identity contract
 
-`registry.hashVersion`, `metadata.schema_version`, and compiler parser version are `2.0.0`. SHA-256 uses the domain `ver.protocol-graph/v2` and canonical JSON: recursively sorted object keys; outer ABI/fact collections sorted; parameter, output and tuple component order preserved. Inputs include chain ID, lowercased contract and implementation addresses, proxy flag, facet address/selector mappings, the complete ABI, source text (CRLF normalized to LF), verified-source evidence, compiler version, roles, events, dependencies and all classified functions. Timing, cache status, semantic prose and registry state are excluded.
+`registry.hashVersion`, `metadata.schema_version`, and compiler parser version are `2.1.0`. SHA-256 uses the domain `ver.protocol-graph/v2.1` and canonical JSON: recursively sorted object keys; outer ABI/fact collections sorted; parameter, output and tuple component order preserved. Inputs include chain ID, lowercased contract and implementation addresses, runtime and implementation/facet code hashes, proxy flag, facet address/selector mappings, the complete ABI, source text (CRLF normalized to LF), verified-source evidence, compiler version, roles, events, dependencies and all classified functions. Timing, cache status, semantic prose and registry state are excluded.
 
 Pure offline compiler callers must supply chain ID and source verification explicitly for on-chain use. Missing chain ID hashes into a separate `null` offline identity; absent source verification is false. Explorer adapters must return only verified source/ABI, or null. `source_verified` reflects that provenance contract and is not an independent bytecode equivalence proof.
 
-Every 1.x hash is incompatible. Old SQLite graph entries are invalidated by the schema version and chain-scoped `graph-2.0.0` namespace. Semantic cache keys additionally include the graph hash. Recompile from fresh artifacts and obtain a newly reviewed attestation; do not rewrite historical attestations automatically. The deployed V2 registry can store the new bytes32 hash without changing its contract.
+Every 1.x and 2.0 hash is incompatible. Old SQLite graph entries are invalidated by the schema version and chain-scoped `graph-2.1.0` namespace. Semantic cache keys additionally include the graph hash. Recompile from fresh artifacts and obtain a newly reviewed attestation; do not rewrite historical attestations automatically. The active V3 registry stores the new bytes32 hash through the same read ABI used by V2 consumers.
 
 ## Registry freshness
 
@@ -28,4 +28,4 @@ Writes without established access control are `unknown`, not `public mutator`. N
 
 The repaired lockfile includes the two missing platform-dependent emnapi entries; it preserves existing dependency versions. CI now tests Ubuntu and Windows with npm 11.6.2 on Node 22. Explorer request deadlines cover response body consumption and validation, not headers alone.
 
-Before release: require green CI, deploy the approved build to staging using the [CI-gated staging process](STAGING_RELEASE.md), run wallet-team acceptance, then approve publication. Automatic Git deployments and automatic production alias assignment are disabled for this rollout. The deployed V2 registry, separate undeployed V3 candidate, and low-severity contract-tooling advisory remain as previously documented.
+Before release: require green CI, deploy the approved build to staging using the [CI-gated staging process](STAGING_RELEASE.md), run wallet-team acceptance, then approve publication. Automatic Git deployments and automatic production alias assignment are disabled for this rollout. BOT Chain testnet and mainnet now use deployed V3 registries; V2 remains on-chain as historical rollback context.

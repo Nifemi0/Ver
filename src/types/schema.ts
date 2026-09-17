@@ -6,6 +6,9 @@ export const MetadataSchema = z.object({
   is_proxy: z.boolean(),
   source_verified: z.boolean().optional(),
   chain_id: z.number().optional(),
+  snapshot_block: z.string().optional(),
+  identity_checked_at: z.string().optional(),
+  runtime_code_hash: z.string().optional(),
   implementation_address: z.string().optional(),
   compiler_version: z.string(),
   schema_version: z.string(),
@@ -96,7 +99,7 @@ export const RegistrySchema = z.object({
   lookupStatus: z.enum(["checked", "unavailable", "disabled"]).optional(),
   metadataURI: z.string(),
   registryAddress: z.string(),
-  deploymentNetwork: z.enum(["X Layer Mainnet", "BOT Chain Testnet", "Off-Chain Only"]),
+  deploymentNetwork: z.enum(["X Layer Mainnet", "BOT Chain Mainnet", "BOT Chain Testnet", "Off-Chain Only"]),
 }).optional();
 
 export const VerZodSchema = z.object({

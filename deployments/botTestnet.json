@@ -1,14 +1,16 @@
 {
   "network": "BOT Chain Testnet",
-  "version": 2,
+  "contract": "VerRegistryV3",
+  "version": 3,
   "chainId": "968",
   "rpc": "https://rpc.bohr.life",
   "explorer": "https://scan.bohr.life",
   "deployer": "0x5A1fCB4d642f3d3C3BaD7705eA643aDCc1805b9A",
-  "address": "0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5",
-  "transactionHash": "0xd0dfabd4da61cacbaab71fccb13acf5e1762bdde5394c5ffe3aa9ae71f25f881",
-  "blockNumber": 22013269,
+  "address": "0x1763B6958CdD3FF5CebF64c960382ECF3669fFF2",
+  "transactionHash": "0x34f53311a8b02dc4649f134a1bb728b7b062897a0a5b832f7b0e9f1efa20d05c",
+  "blockNumber": 22366574,
   "verified": true,
-  "status": "LIVE_AND_VERIFIED_ON_BOT_CHAIN_TESTNET_V2",
-  "timestamp": "2026-09-02T16:41:21.255Z"
+  "status": "LIVE_AND_VERIFIED_ON_BOT_CHAIN_TESTNET_V3",
+  "timestamp": "2026-09-05T18:20:51.029Z",
+  "previousRegistry": "0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5"
 }

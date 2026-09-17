@@ -1,0 +1,15 @@
+{
+  "network": "BOT Chain Mainnet",
+  "contract": "VerRegistryV3",
+  "version": 3,
+  "chainId": "677",
+  "rpc": "https://rpc.botchain.ai",
+  "explorer": "https://scan.botchain.ai",
+  "deployer": "0x5A1fCB4d642f3d3C3BaD7705eA643aDCc1805b9A",
+  "address": "0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7",
+  "transactionHash": "0xbabdc93b54bc6e480ac6f3a288113e08d396232b3978106e0bcdfbcd1f9e2268",
+  "blockNumber": 23251790,
+  "verified": true,
+  "status": "LIVE_AND_VERIFIED_ON_BOT_CHAIN_MAINNET_V3",
+  "timestamp": "2026-09-14T21:51:56.001Z"
+}

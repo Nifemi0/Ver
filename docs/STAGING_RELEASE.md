@@ -1,6 +1,6 @@
 # CI-gated staging releases
 
-BOT Chain testnet remains the target. Production aliases are not promoted by this release process, and no registry attestations are written.
+BOT Chain testnet remains the default staging target. BOT Chain mainnet is configured separately for chain `677`. Production aliases are not promoted by this release process, and no registry attestations are written.
 
 ## Deployment controls
 
@@ -14,10 +14,10 @@ The connected Vercel CLI account can deploy, but its app credential is not permi
 
 ## Preview configuration
 
-Preview uses chain 968, the verified BOT RPC/explorer and existing V2 registry. `VER_ENABLE_WRITES=false`, `VER_REGISTRY_LOOKUP=true`, and external intent LLM use is disabled. Preview protection stays enabled. Wallet-team origin/CORS configuration must be set once the team supplies its staging wallet URL. Do not broaden CORS to all origins.
+Preview uses chain 968, the verified BOT testnet RPC/explorer and active testnet V3 registry. `VER_ENABLE_WRITES=false`, `VER_REGISTRY_LOOKUP=true`, and external intent LLM use is disabled. Preview protection stays enabled. Wallet-team origin/CORS configuration must be set once the team supplies its staging wallet URL. Do not broaden CORS to all origins.
 
 ## Acceptance and approvals
 
-After deployment, check the release version, successful exact PRWA approval simulation, blocked malformed/unsupported requests, graph schema/hash 2.0, and protected preview access. These are read-only tests; they do not sign or broadcast.
+After deployment, check the release version, successful exact approval simulation against an agreed fixture, blocked malformed/unsupported requests, graph schema/hash 2.1, and protected preview access. These are read-only tests; they do not sign or broadcast.
 
 Joint acceptance is not complete until the wallet team provides its staging wallet and validates account/chain changes, expiry, independent decoding, re-simulation, user rejection, signing UX, and receipt handling. Signing/broadcast tests need a separately agreed test-fund budget. New graph attestations require separate explicit approval. Production promotion and npm publication are not included in staging deployment.

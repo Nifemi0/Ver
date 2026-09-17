@@ -18,7 +18,8 @@ export class GraphAssembler {
         extractionTimeMs: number
     ): VerSchema {
         
-        const isVerified = integrityScore >= 85;
+        // Coverage is not semantic/security verification or an attestation.
+        const isVerified = false;
 
         return {
             metadata: {
@@ -27,7 +28,7 @@ export class GraphAssembler {
                 is_proxy: input.isProxy,
                 implementation_address: input.implementation || undefined,
                 compiler_version: input.metadata.compilerVersion,
-                schema_version: "2.0.0",
+                schema_version: "2.1.0",
                 source_verified: input.sourceVerified === true,
                 chain_id: input.chainId,
                 enrichment_version: "1.0.0",

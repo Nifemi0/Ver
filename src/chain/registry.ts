@@ -30,7 +30,9 @@ const REGISTRY_ABI = [
 ] as const;
 
 const DEFAULT_BOT_REGISTRY_ADDRESS =
-  "0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5" as const;
+  "0x1763B6958CdD3FF5CebF64c960382ECF3669fFF2" as const;
+const DEFAULT_BOT_MAINNET_REGISTRY_ADDRESS =
+  "0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7" as const;
 const LEGACY_XLAYER_REGISTRY_ADDRESS =
   "0x2061045fE42d789a12887D77EBAed26687a49c21" as const;
 
@@ -53,6 +55,8 @@ function getPublicClient(chainId = getActiveChain().id) {
 export function getRegistryAddressForChain(chainId = getActiveChain().id): Address {
   const addr = chainId === 968
     ? (process.env.BOT_TESTNET_REGISTRY_ADDRESS || DEFAULT_BOT_REGISTRY_ADDRESS)
+    : chainId === 677
+    ? (process.env.BOT_MAINNET_REGISTRY_ADDRESS || DEFAULT_BOT_MAINNET_REGISTRY_ADDRESS)
     : (process.env.REGISTRY_ADDRESS || process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || LEGACY_XLAYER_REGISTRY_ADDRESS);
   return addr as Address;
 }

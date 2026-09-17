@@ -57,6 +57,9 @@ export class SemanticEnricher {
     const timeMs = Math.round(performance.now() - start);
     
     graph.semantic.semantic_status = status;
+    graph.semantic.verified = false;
+    graph.security.verified = false;
+    graph.developer.verified = false;
     if ((status as string) === "COMPLETE") {
         graph.semantic.prompt_version = this.promptVersion;
         graph.semantic.model = this.model;

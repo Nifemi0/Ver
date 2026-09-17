@@ -7,7 +7,7 @@ export class DependencyExtractor implements GraphExtractor<DependencyResult> {
         if (input.depth >= input.maxDepth || input.visited.has(input.address)) {
             return { dependencies: [] };
         }
-        input.visited.add(input.address);
+        // Extraction must not mutate the caller's input between compilations.
 
         const depsMap = new Map<string, DependencyItem>();
 

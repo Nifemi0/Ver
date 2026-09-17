@@ -39,5 +39,11 @@ export default defineConfig({
       chainId: 968,
       accounts,
     },
+    botMainnet: {
+      type: "http", chainType: "generic",
+      url: process.env.BOT_MAINNET_RPC_URL ?? "https://rpc.botchain.ai",
+      chainId: 677,
+      accounts,
+    },
   },
 });

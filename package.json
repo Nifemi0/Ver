@@ -1,6 +1,6 @@
 {
   "name": "aic-mcp",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "BOT Chain wallet-safety and protocol intelligence: verified contract graphs and simulation-gated unsigned token transactions over HTTP and MCP.",
   "main": "dist/sdk/client.js",
   "module": "dist/sdk/client.mjs",
@@ -30,6 +30,7 @@
     "docs/WALLET_TEAM_HANDOFF.md",
     "docs/GRAPH_V2_MIGRATION.md",
     "docs/STAGING_RELEASE.md",
+    "docs/TRUST_FIXES_1_0_8.md",
     "docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md",
     "docs/BOT_CHAIN_TESTNET.md"
   ],

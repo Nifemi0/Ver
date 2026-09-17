@@ -10,9 +10,11 @@ import { getExplorerApiUrlForChain, getExplorerUrlForChain } from "../src/chain/
 
 dotenv.config();
 
-const ADDRESS = process.env.BOT_TESTNET_REGISTRY_ADDRESS;
-const CHAIN_ID = 968;
-if (!ADDRESS) throw new Error("Set BOT_TESTNET_REGISTRY_ADDRESS before BOT Chain verification.");
+const CHAIN_ID = Number(process.env.VER_DEPLOYMENT_CONFIRM_CHAIN_ID ?? process.env.VER_VERIFY_CHAIN_ID ?? "968");
+const ADDRESS = CHAIN_ID === 677 ? process.env.BOT_MAINNET_REGISTRY_ADDRESS : process.env.BOT_TESTNET_REGISTRY_ADDRESS;
+if (!ADDRESS) throw new Error(CHAIN_ID === 677 ? "Set BOT_MAINNET_REGISTRY_ADDRESS before BOT Chain mainnet verification." : "Set BOT_TESTNET_REGISTRY_ADDRESS before BOT Chain testnet verification.");
+const CONTRACT_NAME = process.env.VER_REGISTRY_CONTRACT === "VerRegistryV3" ? "VerRegistryV3" : "VerRegistry";
+const CONTRACT_FILE = `${CONTRACT_NAME}.sol`;
 const API = process.env.VERIFY_EXPLORER_API_URL ?? getExplorerApiUrlForChain(CHAIN_ID);
 const BUILD_INFO = path.join(
   __dirname,
@@ -20,7 +22,7 @@ const BUILD_INFO = path.join(
 );
 const SOURCE_PATH = path.join(
   __dirname,
-  "../contracts/contracts/VerRegistry.sol"
+  `../contracts/contracts/${CONTRACT_FILE}`
 );
 
 async function alreadyVerified(): Promise<boolean> {
@@ -29,8 +31,8 @@ async function alreadyVerified(): Promise<boolean> {
   const data = await res.json();
   const r = Array.isArray(data.result) ? data.result[0] : data.result;
   // A Blockscout source record is not enough: an address can have a stale or
-  // mismatched label. Only accept verification for VerRegistry itself.
-  return r?.ContractName === "VerRegistry" && Boolean(r?.SourceCode);
+  // mismatched label. Only accept verification for the selected registry.
+  return r?.ContractName === CONTRACT_NAME && Boolean(r?.SourceCode);
 }
 
 function loadStandardInput(): string {
@@ -58,7 +60,7 @@ function loadStandardInput(): string {
   const source = fs.readFileSync(SOURCE_PATH, "utf8");
   return JSON.stringify({
     language: "Solidity",
-    sources: { "contracts/VerRegistry.sol": { content: source } },
+    sources: { [`contracts/${CONTRACT_FILE}`]: { content: source } },
     settings: {
       optimizer: { enabled: true, runs: 200 },
       evmVersion: "paris",
@@ -82,7 +84,7 @@ async function verify() {
     contractaddress: ADDRESS,
     sourceCode,
     codeformat: "solidity-standard-json-input",
-    contractname: "contracts/VerRegistry.sol:VerRegistry",
+    contractname: `contracts/${CONTRACT_FILE}:${CONTRACT_NAME}`,
     compilerversion: "v0.8.20+commit.a1b79de6",
     licenseType: "3", // MIT
   });

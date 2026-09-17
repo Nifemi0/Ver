@@ -1,6 +1,8 @@
 # BOT Chain SDK integration
 
-Release candidate `1.0.7` exports `VerClient` from `aic-mcp`. This SDK runs in Node.js (Node 22), not directly inside a wallet extension: use the HTTP endpoint from the wallet, or run the SDK on your backend. Package publication is a separate release step; do not assume the npm latest version contains these fixes.
+Current repository candidate: **1.0.8**, graph/hash **2.1.0**. See [trust corrections and release boundaries](docs/TRUST_FIXES_1_0_8.md). BOT Chain testnet and mainnet registries are deployed and source-verified; API redeployment and npm publication remain separate release steps.
+
+Release candidate `1.0.8` exports `VerClient` from `aic-mcp`. This SDK runs in Node.js (Node 22), not directly inside a wallet extension: use the HTTP endpoint from the wallet, or run the SDK on your backend. Package publication is a separate release step; do not assume the npm latest version contains these fixes until the published version is checked.
 
 ```typescript
 import { VerClient } from "aic-mcp";
@@ -36,7 +38,7 @@ The wallet must reject stale responses, require matching active account and chai
 
 | Method | Purpose and limitation |
 | --- | --- |
-| `getProtocolGraph(address, forceRefresh?)` | Graph format/hash 2.0.0 binds chain, implementation/facets, full ABI and source. Registry authorization is re-read even on structural cache hits. |
+| `getProtocolGraph(address, forceRefresh?)` | Graph format/hash 2.1.0 binds chain, implementation/facets, runtime code hash, full ABI and source. Registry authorization is re-read even on structural cache hits. |
 | `getContractSummary(address)` | Lightweight summary; completeness scores are not security guarantees. |
 | `explainTransaction(address, calldata)` | Proxy-resolved ABI decoding and privilege classification; not an authorization decision. |
 | `decodeEventLog(address, topics, data)` | Decode emitted logs with the resolved ABI. |
@@ -52,13 +54,19 @@ The wallet must reject stale responses, require matching active account and chai
 
 ## Configuration
 
-Set `VER_NETWORK=botTestnet`, `BOT_TESTNET_RPC_URL=https://rpc.bohr.life`, and `VER_ENABLE_WRITES=false`. No wallet keys or deployer keys belong in this service. X Layer 196 remains explicitly selectable for compatibility, not as the BOT integration default.
+For BOT Chain testnet, set `VER_NETWORK=botTestnet`, `BOT_TESTNET_RPC_URL=https://rpc.bohr.life`, `BOT_TESTNET_REGISTRY_ADDRESS=0x1763B6958CdD3FF5CebF64c960382ECF3669fFF2`, and `VER_ENABLE_WRITES=false`.
 
-Graph attestations and wallet preparation are different checks. `registry.verified` is an active matching hash, not an audit. A missing attestation is not silently upgraded into trust by a high structural score. Wallet teams must decide whether their policy additionally requires an allowlisted token, matching registry attestation, or both.
+For BOT Chain mainnet, set `VER_NETWORK=botMainnet`, `BOT_MAINNET_RPC_URL=https://rpc.botchain.ai`, `BOT_MAINNET_REGISTRY_ADDRESS=0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7`, and `VER_ENABLE_WRITES=false`.
 
-## Graph 2.0 migration
+No wallet keys, deployer keys, or attester keys belong in the API service. X Layer 196 remains explicitly selectable for compatibility, not as the BOT integration default.
 
-See [migration contract](docs/GRAPH_V2_MIGRATION.md). Never reuse a 1.x attestation for a 2.0 graph. `registry.lookupStatus` distinguishes `checked`, `unavailable`, and `disabled`; lookup failure always returns `verified:false`. `checkedAt` timestamps the lookup attempt, not transaction inclusion. Structural cache entries remain snapshots; use `forceRefresh:true` to rebuild artifacts before attestation decisions.
+The MCP server uses the same network settings. Each MCP tool also accepts optional `chainId`: `677` for BOT Chain mainnet, `968` for BOT Chain testnet, and `196` for X Layer compatibility. Omit `chainId` to use `VER_NETWORK`.
+
+Graph attestations and wallet preparation are different checks. `registry.verified` is an active matching hash, not an audit. A missing attestation is not silently upgraded into trust by a high structural score. Because the supported BOT mainnet contract list is not selected yet, no mainnet graph attestations have been written. Wallet teams must decide whether their policy additionally requires an allowlisted token, matching registry attestation, or both.
+
+## Graph 2.1 migration
+
+See [migration contract](docs/GRAPH_V2_MIGRATION.md). Never reuse a 1.x or 2.0 attestation for a 2.1 graph. `registry.lookupStatus` distinguishes `checked`, `unavailable`, and `disabled`; lookup failure always returns `verified:false`. `checkedAt` timestamps the lookup attempt, not transaction inclusion. Structural cache entries remain snapshots; use `forceRefresh:true` to rebuild artifacts before attestation decisions.
 
 Decoding returns recursive decimal strings for integers, including nested arrays and tuple objects. `classification: "unknown"` means access control is not established. `potentially privileged` is only a name-based heuristic; `read-only` reflects ABI mutability, not permission to read or proof of safety. Function signatures preserve overloads.
 

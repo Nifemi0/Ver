@@ -46,7 +46,7 @@ describe("Protocol Graph — integration", () => {
     it("returns a valid metadata block", () => {
       expect(graph.metadata.protocol_name).toBe(fx.name);
       expect(graph.metadata.compiler_version).toBe("0.8.20");
-      expect(graph.metadata.schema_version).toBe("2.0.0");
+      expect(graph.metadata.schema_version).toBe("2.1.0");
       expect(graph.metadata.cache_status).toBe("MISS");
     });
 
@@ -162,11 +162,11 @@ describe("Protocol Graph — integration", () => {
       ({ graph } = await pipeline.compile(buildInput(fixture("Ownable"))));
     });
 
-    it("detects Owner role with confidence 1.0 from ABI", () => {
+    it("labels the Owner role as a heuristic from ABI", () => {
       const ownerRole = graph.structural.roles.find((r) => r.name === "Owner");
       expect(ownerRole).toBeDefined();
-      expect(ownerRole!.confidence).toBe(1.0);
-      expect(ownerRole!.source).toBe("ABI");
+      expect(ownerRole!.confidence).toBe(0.5);
+      expect(ownerRole!.source).toBe("ABI heuristic");
     });
 
     it("detects transferOwnership as privileged", () => {

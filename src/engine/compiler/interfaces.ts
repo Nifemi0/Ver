@@ -8,12 +8,14 @@ export interface CompilerInput {
     implementation: string | null;
     chainId?: number;
     sourceVerified?: boolean;
-    facets?: { address: string; selectors: string[] }[];
+    facets?: { address: string; selectors: string[]; codeHash?: string }[];
+    runtimeCodeHash?: string;
+    implementationCodeHash?: string;
     metadata: {
         protocolName: string;
         compilerVersion: string;
     };
-    deploymentNetwork?: "X Layer Mainnet" | "BOT Chain Testnet" | "Off-Chain Only";
+    deploymentNetwork?: "X Layer Mainnet" | "BOT Chain Mainnet" | "BOT Chain Testnet" | "Off-Chain Only";
     depth: number;
     maxDepth: number;
     visited: Set<string>;

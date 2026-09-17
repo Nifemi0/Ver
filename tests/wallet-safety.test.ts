@@ -10,7 +10,7 @@ const abi = parseAbi(["function approve(address spender,uint256 amount) returns 
 function fixture() {
   const provider = { generate: vi.fn() };
   const client = new VerClient(provider, 968);
-  const normalize = vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi: JSON.stringify(abi), sourceCode: "verified fixture", sourceVerified: true });
+  const normalize = vi.spyOn((client as any).normalizer, "normalize").mockResolvedValue({ abi: JSON.stringify(abi), sourceCode: "verified fixture", sourceVerified: true, snapshotBlock: "100" });
   const rpc = {
     getChainId: vi.fn().mockResolvedValue(968),
     getBytecode: vi.fn().mockResolvedValue("0x6000"),
@@ -23,12 +23,15 @@ function fixture() {
 afterEach(() => vi.unstubAllEnvs());
 describe("wallet signing safety", () => {
   it("prepares exactly one token and binds the simulated sender and expiry", async () => {
-    const { client } = fixture();
+    const { client, rpc } = fixture();
     const r = await client.compileAgentIntent(token, intent, account);
     expect(r.signable).toBe(true);
     expect(r.args).toEqual([spender, "1000000"]);
     expect(r.transaction.from).toBe(account);
     expect(r.requiresUserConfirmation).toBe(true);
+    expect(r.snapshotBlock).toBe("100");
+    expect(rpc.call).toHaveBeenCalledWith(expect.objectContaining({ blockNumber: 100n }));
+    expect(rpc.readContract.mock.calls.every(([request]) => request.blockNumber === 100n)).toBe(true);
     expect(Date.parse(r.expiresAt) - Date.parse(r.preparedAt)).toBeGreaterThanOrEqual(59000);
   });
   it.each([
@@ -64,7 +67,7 @@ describe("wallet signing safety", () => {
   });
   it("supports a verified token with no declared return value", async () => {
     const { client, rpc, normalize } = fixture();
-    normalize.mockResolvedValue({ abi: JSON.stringify(parseAbi(["function approve(address spender,uint256 amount)"])), sourceCode: "verified fixture", sourceVerified: true });
+    normalize.mockResolvedValue({ abi: JSON.stringify(parseAbi(["function approve(address spender,uint256 amount)"])), sourceCode: "verified fixture", sourceVerified: true, snapshotBlock: "100" });
     rpc.call.mockResolvedValue({ data: "0x" });
     expect((await client.compileAgentIntent(token, intent, account)).signable).toBe(true);
   });

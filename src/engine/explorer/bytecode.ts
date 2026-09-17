@@ -2,10 +2,11 @@ import { createPublicClient, http, Address } from 'viem';
 import { getActiveChain } from '../../chain/networks';
 
 export class BytecodeDecompiler {
-    private client = createPublicClient({ chain: getActiveChain(), transport: http() });
+    private client;
+    constructor(chain = getActiveChain()) { this.client = createPublicClient({ chain, transport: http(undefined, { timeout: 10000, retryCount: 1 }) }); }
 
-    public async generatePseudoAbi(address: string): Promise<string | null> {
-        const bytecode = await this.client.getBytecode({ address: address as Address });
+    public async generatePseudoAbi(address: string, blockNumber?: bigint): Promise<string | null> {
+        const bytecode = await this.client.getBytecode({ address: address as Address, blockNumber });
         if (!bytecode || bytecode === "0x") return null;
 
         // Extract PUSH4 [selector] EQ pattern (63 [4 bytes] 14)
@@ -24,11 +25,10 @@ export class BytecodeDecompiler {
         // Batch requests to 4byte.directory can be slow, but for MVP we will do simple individual fetches
         // Since we want this to be fast, we'll map them all in parallel with a timeout
         const fetchSignature = async (hex: string) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
                 const res = await fetch(`https://www.4byte.directory/api/v1/signatures/?hex_signature=0x${hex}`, { signal: controller.signal });
-                clearTimeout(timeoutId);
                 const data = await res.json();
                 if (data.count > 0) {
                     // Just take the oldest/shortest text signature as best guess
@@ -36,11 +36,11 @@ export class BytecodeDecompiler {
                 }
             } catch (e) {
                 // Ignore timeout
-            }
+            } finally { clearTimeout(timeoutId); }
             return `unknown_${hex}()`;
         };
 
-        const signatures = await Promise.all(Array.from(selectors).map(fetchSignature));
+        const signatures = await Promise.all(Array.from(selectors).slice(0, 64).map(fetchSignature));
         
         for (const sig of signatures) {
             // Parse sig like 'transfer(address,uint256)'
