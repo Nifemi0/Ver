@@ -1,5 +1,11 @@
 # Ver Protocol
 
+<!-- nuvixes-project-credit -->
+Built by [Nifemi](https://github.com/Nifemi0), founder of [Nuvixes](https://nuvixes.studio/).
+[Read the Ver build story at Nuvixes](https://nuvixes.studio/projects/ver) for the design decisions, development milestones, and current project status.
+<!-- /nuvixes-project-credit -->
+
+
 **Deterministic by design. Explainable by AI.**
 
 Current repository candidate: `1.0.8`. BOT Chain testnet and mainnet V3 registries are deployed and source-verified, but the hosted API and npm package may still lag until a separate release. Graph schema/hash `2.1.0` requires fresh, separately approved attestations; none are written until supported BOT mainnet contract addresses are selected and reviewed. See [migration notes](docs/GRAPH_V2_MIGRATION.md), [wallet handoff](docs/WALLET_TEAM_HANDOFF.md) and [rollout plan](docs/BOT_CHAIN_WALLET_ROLLOUT_PLAN.md) before integration.
