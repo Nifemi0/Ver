@@ -6,8 +6,6 @@
 **Prize pool:** ~$100k (up to ~10k USDT single awards)  
 **Project:** Ver Protocol  
 **ASP type:** **A2MCP** (Agent-to-MCP) — free MCP/API now; paid x402 later  
-**Builder:** Sky · [@Love_Light_11](https://x.com/Love_Light_11)
-
 ---
 
 ## Hard requirements (checklist)
@@ -38,7 +36,7 @@
 | **Docs** | https://verprotocol.vercel.app/docs.html |
 | **GitHub** | https://github.com/Nifemi0/Ver |
 | **npm / MCP** | https://www.npmjs.com/package/aic-mcp · `npx -y aic-mcp` |
-| **X** | https://x.com/Love_Light_11 |
+| **X** | https://x.com/Ver_Protocol |
 | **Chain** | X Layer Mainnet · chainId **196** |
 | **Sample contract (USDT)** | `0x1E4a5963aBFD975d8c9021ce480b42188849D41d` |
 
@@ -150,7 +148,7 @@ https://www.npmjs.com/package/aic-mcp
 *(paste after you post)*
 
 **Contact / team**  
-Solo · Sky · @Love_Light_11
+Solo · @Ver_Protocol
 
 ---
 
@@ -225,4 +223,4 @@ Use `DEMO.md` timing if you already cut a reel. Cap **≤90 seconds**.
 
 ---
 
-*Pack generated for Sky · Ver = X Layer · do not mix with HashGraph/HashKey submission.*
+*Pack generated for Ver = X Layer · do not mix with HashGraph/HashKey submission.*

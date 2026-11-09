@@ -110,7 +110,7 @@ MCP tools also accept optional `chainId` per call: `677` for BOT Chain mainnet, 
 ## Links
 
 - **Website & Documentation**: [https://verprotocol.vercel.app](https://verprotocol.vercel.app)
-- **Founder / Twitter**: [https://x.com/Love_Light_11](https://x.com/Love_Light_11)
+- **X**: [https://x.com/Ver_Protocol](https://x.com/Ver_Protocol)
 
 ---
 *© 2026 Ver Protocol. Built for BOT Chain.*
