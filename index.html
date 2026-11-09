@@ -70,7 +70,7 @@
             border-radius: 2px;
         }
     </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.bohr.life https://scan.bohr.life https://registry.npmjs.org;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://rpc.bohr.life https://rpc.botchain.ai https://scan.bohr.life https://scan.botchain.ai https://registry.npmjs.org;">
     </head>
 <body class="antialiased min-h-screen flex flex-col justify-between selection:bg-copper-500 selection:text-white">
 <a href="#main-content" class="sr-only focus:not-sr-only">Skip to content</a>
@@ -86,11 +86,12 @@
     <div class="flex items-center gap-6 text-xs font-mono text-slate-300">
         <a href="/docs" class="hover:text-copper-400 transition-colors">Docs</a>
 
-        <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors flex items-center gap-1.5" target="_blank">
+        <button id="connectWalletButton" onclick="connectWallet()" class="rounded-lg border border-copper-500/40 bg-copper-900/20 px-3 py-2 text-[10px] font-mono text-copper-500 transition-colors hover:border-copper-500 hover:bg-copper-900/40" type="button">Connect wallet</button>
+        <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors flex items-center gap-1.5" target="_blank" rel="noopener noreferrer">
             GitHub
             <span class="material-symbols-outlined text-[12px]">open_in_new</span>
         </a>
-        <a href="https://x.com/Love_Light_11" class="hover:text-copper-400 transition-colors flex items-center gap-1.5" target="_blank">
+        <a href="https://x.com/Love_Light_11" class="hover:text-copper-400 transition-colors flex items-center gap-1.5" target="_blank" rel="noopener noreferrer">
             𝕏/Twitter
         </a>
     </div>
@@ -109,10 +110,32 @@
                 Contract context.<br>Exact calldata.<br>For <span class="italic font-light text-slate-350">wallets.</span>
             </h1>
             <p class="text-slate-300 text-sm leading-relaxed mb-8">
-                Resolve contract structure and prepare exact token approvals or transfers on BOT Chain testnet. Ver checks the unsigned call; your wallet keeps review, confirmation and signing. Developer tools can use the same intelligence over MCP.
+                Connect a BOT Chain wallet, resolve contract structure, then prepare exact token approvals or transfers. Ver checks the unsigned call; your wallet keeps review, confirmation and signing.
             </p>
+            <div class="mb-8 grid grid-cols-2 gap-3 text-xs">
+                <div class="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                    <div class="font-mono text-copper-500">Built for review</div>
+                    <p class="mt-1 leading-relaxed text-slate-400">Every prepared call stays visible and unsigned until the wallet owner approves it.</p>
+                </div>
+                <div class="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                    <div class="font-mono text-copper-500">Live on BOT Chain</div>
+                    <p class="mt-1 leading-relaxed text-slate-400">Use Mainnet or Testnet from one interface, with the correct explorer context.</p>
+                </div>
+            </div>
             
             <div class="border-t border-white/5 pt-6 flex flex-col gap-4">
+
+                <div class="rounded-xl border border-white/5 bg-black/30 p-4 font-mono text-xs">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="text-slate-300">Wallet status</span>
+                        <span id="walletStatus" class="text-slate-500">Not connected</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <span id="walletAddress" class="min-w-0 truncate text-slate-500">Connect a wallet to enable transaction preparation.</span>
+                        <button id="switchNetworkButton" onclick="switchToSelectedNetwork()" class="hidden shrink-0 text-copper-500 hover:text-white" type="button">Switch network</button>
+                    </div>
+                    <a id="registryLink" href="https://scan.botchain.ai/address/0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7" target="_blank" rel="noopener noreferrer" class="mt-3 inline-block text-[10px] text-copper-500 hover:text-white">View Ver Registry V3 on explorer</a>
+                </div>
 
                 <a href="/docs#aic" class="text-sm text-copper-500 hover:text-white">Read the wallet integration guide &rarr;</a>
 
@@ -135,11 +158,17 @@
                         <span class="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
                         <span class="text-xs font-mono text-slate-450 ml-1.5">Interactive Schema Compiler</span>
                     </div>
-                    <span class="text-[10px] font-mono text-copper-500 bg-copper-900/20 px-2 py-0.5 border border-copper-500/10 rounded">BOT Chain Testnet · 968</span>
+                    <div class="flex items-center gap-2">
+                        <label for="chainSelector" class="sr-only">BOT Chain network</label>
+                        <select id="chainSelector" onchange="onChainChanged()" class="rounded border border-copper-500/20 bg-black/40 px-2 py-1 text-[10px] font-mono text-copper-500 outline-none focus:border-copper-500">
+                            <option value="677">BOT Mainnet · 677</option>
+                            <option value="968">BOT Testnet · 968</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="contractAddress" placeholder="Paste BOT Chain Contract Address (0x...)" class="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-white outline-none focus:border-copper-500/50 transition-colors" value="0x922835859623d6F3b99a2742D585E093bBA0a740" />
+                    <input type="text" id="contractAddress" placeholder="Paste BOT Chain contract address (0x...)" class="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-white outline-none focus:border-copper-500/50 transition-colors" value="0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7" />
                     <button onclick="compileContract()" class="group relative bg-copper-500 hover:bg-copper-400 text-white font-medium text-xs rounded-xl px-6 py-2.5 transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden shadow-[0_0_20px_rgba(200,122,83,0.3)] hover:shadow-[0_0_30px_rgba(200,122,83,0.5)]">
                         <span class="relative z-10 flex items-center gap-2">Compile Graph <span class="material-symbols-outlined text-sm font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span></span>
                         <div class="absolute inset-0 bg-gradient-to-r from-copper-400 to-copper-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -148,8 +177,23 @@
                 
                 <div class="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-300">
                     <span>Try:</span>
-                    <button onclick="setAddress('0x922835859623d6F3b99a2742D585E093bBA0a740')" class="hover:text-white transition-colors underline decoration-slate-700">PRWA Token</button>
-                    <button onclick="setAddress('0xfEB4423E669a0e160b316a8Ca46D8Ca70eB2A4F5')" class="hover:text-white transition-colors underline decoration-slate-700">Ver Registry v2</button>
+                    <button onclick="setAddress(networkConfig().registry)" class="hover:text-white transition-colors underline decoration-slate-700">Ver Registry V3</button>
+                    <button onclick="useTestToken()" class="hover:text-white transition-colors underline decoration-slate-700">Testnet PRWA Token</button>
+                </div>
+
+                <div class="rounded-xl border border-copper-500/15 bg-copper-900/10 p-4">
+                    <div class="mb-3 flex items-center justify-between gap-4">
+                        <div>
+                            <div class="text-xs font-mono text-copper-500">Wallet-safe transaction preparation</div>
+                            <p class="mt-1 text-xs text-slate-400">Only exact ERC-20 approvals and transfers are supported. Ver never receives a signing key.</p>
+                        </div>
+                        <span id="preparedStatus" class="shrink-0 text-[10px] font-mono text-slate-500">Awaiting wallet</span>
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <input id="transactionIntent" type="text" maxlength="1000" placeholder="e.g. approve 1 USDT to 0x..." class="min-w-0 flex-1 rounded-lg border border-white/5 bg-black/40 px-3 py-2.5 text-xs font-mono text-white outline-none focus:border-copper-500/50" />
+                        <button onclick="prepareTransaction()" class="rounded-lg bg-white px-4 py-2.5 text-xs font-medium text-black transition-colors hover:bg-copper-100" type="button">Prepare</button>
+                    </div>
+                    <div id="preparedTransaction" class="mt-3 hidden rounded-lg border border-white/5 bg-black/40 p-3 text-xs font-mono text-slate-300"></div>
                 </div>
                 
                 <div class="bg-black/70 rounded-xl p-4 border border-white/5 font-mono text-xs text-slate-300 min-h-[250px] max-h-[350px] overflow-y-auto leading-relaxed">
@@ -239,16 +283,136 @@
         </div>
         <div class="flex gap-4">
             <a href="/docs" class="hover:text-copper-400 transition-colors">Docs</a>
-            <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors" target="_blank">GitHub</a>
-            <a href="https://x.com/Love_Light_11" class="hover:text-copper-400 transition-colors" target="_blank">𝕏</a>
+            <a href="https://botchain.ai" class="hover:text-copper-400 transition-colors" target="_blank" rel="noopener noreferrer">BOT Chain</a>
+            <a href="https://scan.botchain.ai" class="hover:text-copper-400 transition-colors" target="_blank" rel="noopener noreferrer">Explorer</a>
+            <a href="https://github.com/Nifemi0/Ver" class="hover:text-copper-400 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://x.com/Love_Light_11" class="hover:text-copper-400 transition-colors" target="_blank" rel="noopener noreferrer">𝕏</a>
         </div>
     </div>
 </footer>
 
 <script>
-    const BOT_CHAIN_RPC = 'https://rpc.bohr.life';
+    const BOT_NETWORKS = {
+        677: {
+            chainId: 677,
+            chainHex: '0x2a5',
+            name: 'BOT Chain Mainnet',
+            rpc: 'https://rpc.botchain.ai',
+            explorer: 'https://scan.botchain.ai',
+            registry: '0x51e1BF60223ef60cec511eB1d423FC52b4fF05C7'
+        },
+        968: {
+            chainId: 968,
+            chainHex: '0x3c8',
+            name: 'BOT Chain Testnet',
+            rpc: 'https://rpc.bohr.life',
+            explorer: 'https://scan.bohr.life',
+            registry: '0x1763B6958CdD3FF5CebF64c960382ECF3669fFF2',
+            testToken: '0x922835859623d6F3b99a2742D585E093bBA0a740'
+        }
+    };
+    let walletAccount = null;
+    let walletChainId = null;
+    let preparedTransaction = null;
 
     let compiling = false;
+
+    function selectedChainId() {
+        return Number(document.getElementById('chainSelector').value);
+    }
+
+    function networkConfig() {
+        return BOT_NETWORKS[selectedChainId()];
+    }
+
+    function shortAddress(address) {
+        return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
+    }
+
+    function setWalletStatus(message, tone = 'text-slate-500') {
+        const status = document.getElementById('walletStatus');
+        if (!status) return;
+        status.textContent = message;
+        status.className = tone;
+    }
+
+    function refreshWalletUi() {
+        const address = document.getElementById('walletAddress');
+        const connect = document.getElementById('connectWalletButton');
+        const switchButton = document.getElementById('switchNetworkButton');
+        const registryLink = document.getElementById('registryLink');
+        registryLink.href = networkConfig().explorer + '/address/' + networkConfig().registry;
+        const correctNetwork = walletChainId === selectedChainId();
+        if (!walletAccount) {
+            address.textContent = 'Connect a wallet to enable transaction preparation.';
+            connect.textContent = 'Connect wallet';
+            switchButton.classList.add('hidden');
+            setWalletStatus('Not connected');
+            return;
+        }
+        address.textContent = shortAddress(walletAccount) + ' · ' + networkConfig().name;
+        connect.textContent = shortAddress(walletAccount);
+        if (correctNetwork) {
+            setWalletStatus('Connected', 'text-emerald-400');
+            switchButton.classList.add('hidden');
+        } else {
+            setWalletStatus('Wrong network', 'text-amber-400');
+            switchButton.classList.remove('hidden');
+        }
+    }
+
+    async function connectWallet() {
+        if (!window.ethereum) {
+            setWalletStatus('No injected wallet found', 'text-red-400');
+            return;
+        }
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            walletAccount = accounts && accounts[0] ? accounts[0] : null;
+            walletChainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16);
+            refreshWalletUi();
+        } catch (error) {
+            setWalletStatus(error && error.code === 4001 ? 'Connection rejected' : 'Connection unavailable', 'text-red-400');
+        }
+    }
+
+    async function switchToSelectedNetwork() {
+        if (!window.ethereum) return connectWallet();
+        const network = networkConfig();
+        try {
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: network.chainHex }] });
+        } catch (error) {
+            if (error && error.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: network.chainHex,
+                        chainName: network.name,
+                        nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 },
+                        rpcUrls: [network.rpc],
+                        blockExplorerUrls: [network.explorer]
+                    }]
+                });
+            } else {
+                setWalletStatus('Network switch rejected', 'text-red-400');
+            }
+        }
+    }
+
+    function onChainChanged() {
+        preparedTransaction = null;
+        document.getElementById('preparedTransaction').classList.add('hidden');
+        document.getElementById('preparedStatus').textContent = 'Awaiting wallet';
+        document.getElementById('preparedStatus').className = 'shrink-0 text-[10px] font-mono text-slate-500';
+        setAddress(networkConfig().registry);
+        refreshWalletUi();
+    }
+
+    function useTestToken() {
+        document.getElementById('chainSelector').value = '968';
+        onChainChanged();
+        setAddress(BOT_NETWORKS[968].testToken);
+    }
 
     function setAddress(addr) {
         const el = document.getElementById('contractAddress');
@@ -293,7 +457,7 @@
         return { hasCode: !!(code && code !== '0x'), codeLen: code.length };
     }
     async function ethGetCode(address) {
-        return ethGetCodeOn(BOT_CHAIN_RPC, address);
+        return ethGetCodeOn(networkConfig().rpc, address);
     }
 
     async function compileContract() {
@@ -308,7 +472,7 @@
         setCompileBusy(true);
         logsDiv.innerHTML = '';
         appendLog('> [Compiler] Starting for ' + address, 'text-slate-200');
-        appendLog('> [Compiler] Checking bytecode on BOT Chain (chainId 968)…', 'text-slate-300');
+        appendLog('> [Compiler] Checking bytecode on ' + networkConfig().name + ' (chainId ' + selectedChainId() + ')…', 'text-slate-300');
 
         try {
             const codeInfo = await ethGetCode(address);
@@ -322,7 +486,7 @@
 
 
             appendLog('> [Compiler] Calling /api/compile…', 'text-slate-300');
-            const response = await fetch('/api/compile?chainId=968&address=' + encodeURIComponent(address), {
+            const response = await fetch('/api/compile?chainId=' + selectedChainId() + '&address=' + encodeURIComponent(address), {
                 headers: { 'accept': 'application/json' }
             });
             let data = null;
@@ -342,7 +506,7 @@
                     ok: false,
                     mode: 'onchain_probe_only',
                     contract_address: address,
-                    chainId: 968,
+                    chainId: selectedChainId(),
                     has_bytecode: true,
                     code_len: codeInfo.codeLen,
 
@@ -384,6 +548,126 @@
         pre.innerHTML = highlighted;
         logsDiv.appendChild(pre);
         logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    function setPreparedStatus(message, tone = 'text-slate-500') {
+        const status = document.getElementById('preparedStatus');
+        status.textContent = message;
+        status.className = 'shrink-0 text-[10px] font-mono ' + tone;
+    }
+
+    function showPreparedTransaction(result) {
+        const panel = document.getElementById('preparedTransaction');
+        const transaction = result.transaction;
+        panel.innerHTML = '';
+        const details = [
+            ['Action', result.functionName],
+            ['Target', transaction.to],
+            ['From', transaction.from || walletAccount],
+            ['Chain', String(transaction.chainId)],
+            ['Simulation', result.simulationStatus],
+            ['Expires', new Date(result.expiresAt).toLocaleTimeString()]
+        ];
+        details.forEach(([label, value]) => {
+            const row = document.createElement('div');
+            row.className = 'flex justify-between gap-4 py-1 border-b border-white/5 last:border-0';
+            const labelElement = document.createElement('span');
+            labelElement.className = 'text-slate-500';
+            labelElement.textContent = label;
+            const valueElement = document.createElement('span');
+            valueElement.className = 'max-w-[65%] truncate text-right text-slate-200';
+            valueElement.title = String(value);
+            valueElement.textContent = value;
+            row.append(labelElement, valueElement);
+            panel.appendChild(row);
+        });
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Review in wallet and send';
+        button.className = 'mt-3 w-full rounded-lg border border-copper-500/40 bg-copper-900/20 px-3 py-2 text-xs font-medium text-copper-500 hover:bg-copper-900/40';
+        button.onclick = sendPreparedTransaction;
+        panel.appendChild(button);
+        panel.classList.remove('hidden');
+    }
+
+    async function prepareTransaction() {
+        const address = document.getElementById('contractAddress').value.trim();
+        const intent = document.getElementById('transactionIntent').value.trim();
+        if (!walletAccount) {
+            setPreparedStatus('Connect wallet first', 'text-amber-400');
+            return;
+        }
+        if (walletChainId !== selectedChainId()) {
+            setPreparedStatus('Switch wallet network first', 'text-amber-400');
+            return switchToSelectedNetwork();
+        }
+        if (!intent) {
+            setPreparedStatus('Enter an exact intent', 'text-amber-400');
+            return;
+        }
+        setPreparedStatus('Simulating...', 'text-copper-500');
+        try {
+            const response = await fetch('/api/wallet/prepare', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+                body: JSON.stringify({ chainId: selectedChainId(), contractAddress: address, sender: walletAccount, intent })
+            });
+            const result = await response.json();
+            if (!response.ok || result.signable !== true || result.simulationStatus !== 'success' || !result.transaction) {
+                setPreparedStatus(result.error || 'Preparation blocked', 'text-red-400');
+                return;
+            }
+            if (result.transaction.chainId !== selectedChainId() || result.transaction.from?.toLowerCase() !== walletAccount.toLowerCase()) {
+                setPreparedStatus('Prepared result did not match wallet', 'text-red-400');
+                return;
+            }
+            preparedTransaction = result;
+            setPreparedStatus('Ready for wallet review', 'text-emerald-400');
+            showPreparedTransaction(result);
+        } catch (error) {
+            setPreparedStatus('Preparation unavailable', 'text-red-400');
+        }
+    }
+
+    async function sendPreparedTransaction() {
+        if (!preparedTransaction || !window.ethereum || !walletAccount) return;
+        if (walletChainId !== selectedChainId() || new Date(preparedTransaction.expiresAt).getTime() <= Date.now()) {
+            setPreparedStatus('Result expired or wallet changed; prepare again', 'text-red-400');
+            return;
+        }
+        const tx = preparedTransaction.transaction;
+        if (tx.chainId !== selectedChainId() || tx.from?.toLowerCase() !== walletAccount.toLowerCase()) {
+            setPreparedStatus('Transaction binding changed; prepare again', 'text-red-400');
+            return;
+        }
+        try {
+            setPreparedStatus('Waiting for wallet confirmation...', 'text-copper-500');
+            const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: walletAccount, to: tx.to, data: tx.data, value: tx.value || '0x0' }] });
+            setPreparedStatus('Sent: ' + shortAddress(hash), 'text-emerald-400');
+            window.open(networkConfig().explorer + '/tx/' + hash, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            setPreparedStatus(error && error.code === 4001 ? 'Wallet request rejected' : 'Wallet transaction failed', 'text-red-400');
+        }
+    }
+
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', accounts => {
+            walletAccount = accounts && accounts[0] ? accounts[0] : null;
+            preparedTransaction = null;
+            refreshWalletUi();
+        });
+        window.ethereum.on('chainChanged', chainId => {
+            walletChainId = parseInt(chainId, 16);
+            preparedTransaction = null;
+            refreshWalletUi();
+        });
+        window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+            walletAccount = accounts && accounts[0] ? accounts[0] : null;
+            return window.ethereum.request({ method: 'eth_chainId' });
+        }).then(chainId => {
+            walletChainId = parseInt(chainId, 16);
+            refreshWalletUi();
+        }).catch(() => refreshWalletUi());
     }
 </script>
 
